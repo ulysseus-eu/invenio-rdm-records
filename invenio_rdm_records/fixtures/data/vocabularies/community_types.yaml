@@ -14,3 +14,7 @@
   title:
     en: "Project"
     de: "Projekt"
+- id: "person"
+  title:
+    en: "Person"
+    de: "Person"
