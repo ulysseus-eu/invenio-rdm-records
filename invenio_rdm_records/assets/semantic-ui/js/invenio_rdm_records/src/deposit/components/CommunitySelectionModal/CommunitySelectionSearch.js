@@ -21,6 +21,7 @@ import {
 import { Grid, Menu, Modal } from "semantic-ui-react";
 import { CommunityListItem } from "./CommunityListItem";
 import PropTypes from "prop-types";
+import { CommunityType } from "../../utils";
 
 export class CommunitySelectionSearch extends Component {
   constructor(props) {
@@ -48,6 +49,7 @@ export class CommunitySelectionSearch extends Component {
     const {
       apiConfigs: { allCommunities, myCommunities },
       record,
+      communityType,
     } = this.props;
     const searchApi = new InvenioSearchApi(selectedsearchApi);
     const overriddenComponents = {
@@ -97,7 +99,7 @@ export class CommunitySelectionSearch extends Component {
                     id="my-communities-tab"
                     aria-selected={selectedAppId === myCommunities.appId}
                     aria-controls={myCommunities.appId}
-                    name="My communities"
+                    name={`My ${communityType.getPlural()}`}
                     active={selectedAppId === myCommunities.appId}
                     onClick={() =>
                       this.setState({
@@ -105,7 +107,7 @@ export class CommunitySelectionSearch extends Component {
                       })
                     }
                   >
-                    {i18next.t("My communities")}
+                    {i18next.t(`My ${communityType.getPlural()}`)}
                   </Menu.Item>
                 </Menu>
               </Grid.Column>
@@ -167,6 +169,7 @@ CommunitySelectionSearch.propTypes = {
     }),
   }),
   record: PropTypes.object.isRequired,
+  communityType: CommunityType,
 };
 
 CommunitySelectionSearch.defaultProps = {

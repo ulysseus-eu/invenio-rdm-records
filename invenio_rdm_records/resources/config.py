@@ -418,6 +418,19 @@ class RDMCommunityRecordsResourceConfig(RecordResourceConfig, ConfiguratorMixin)
     )
 
 
+class RDMPersonRecordsResourceConfig(RecordResourceConfig, ConfiguratorMixin):
+    """Person's records resource config."""
+
+    blueprint_name = "person-records"
+    url_prefix = "/persons"
+    routes = {"list": "/<pid_value>/records"}
+
+    response_handlers = FromConfig(
+        "RDM_RECORDS_SERIALIZERS",
+        default=record_serializers,
+    )
+
+
 class RDMRecordCommunitiesResourceConfig(CommunityResourceConfig, ConfiguratorMixin):
     """Record communities resource config."""
 
@@ -425,7 +438,9 @@ class RDMRecordCommunitiesResourceConfig(CommunityResourceConfig, ConfiguratorMi
     url_prefix = "/records"
     routes = {
         "list": "/<pid_value>/communities",
+        "list-persons": "/<pid_value>/persons",
         "suggestions": "/<pid_value>/communities-suggestions",
+        "persons-suggestions": "/<pid_value>/persons-suggestions",
     }
 
     request_extra_args = {

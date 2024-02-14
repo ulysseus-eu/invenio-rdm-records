@@ -437,6 +437,10 @@ class RDMRecordServiceConfig(RecordServiceConfig, ConfiguratorMixin):
         "communities-suggestions": RecordLink(
             "{+api}/records/{id}/communities-suggestions"
         ),
+        "persons": RecordLink("{+api}/records/{id}/persons"),
+        "persons-suggestions": RecordLink(
+            "{+api}/records/{id}/persons-suggestions"
+        ),
         "requests": RecordLink("{+api}/records/{id}/requests"),
     }
 

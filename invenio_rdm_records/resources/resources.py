@@ -317,6 +317,11 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
             route("DELETE", routes["list"], self.remove),
             route("GET", routes["suggestions"], self.get_suggestions),
             route("PUT", routes["list"], self.set_default),
+            route("GET", routes["list-persons"], self.search_persons),
+            route("POST", routes["list-persons"], self.add_person),
+            route("DELETE", routes["list-persons"], self.remove_person),
+            route("PUT", routes["list-persons"], self.set_default_person),
+            route("GET", routes["persons-suggestions"], self.get_persons_suggestions),
         ]
         return url_rules
 
@@ -331,6 +336,20 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
             params=resource_requestctx.args,
             search_preference=search_preference(),
             expand=resource_requestctx.args.get("expand", False),
+        )
+        return items.to_dict(), 200
+
+    @request_search_args
+    @request_view_args
+    @response_handler(many=True)
+    def search_persons(self):
+        """Search for record's persons."""
+        items = self.service.search_person(
+            identity=g.identity,
+            id_=resource_requestctx.view_args["pid_value"],
+            params=resource_requestctx.args,
+            search_preference=search_preference(),
+            expand=resource_requestctx.args.get("expand", False)
         )
         return items.to_dict(), 200
 
@@ -371,6 +390,43 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
 
         return response, 200 if len(processed) > 0 else 400
 
+    @request_view_args
+    @response_handler()
+    @request_data
+    def add_person(self):
+        """Include record in persons."""
+        processed, errors = self.service.add(
+            identity=g.identity,
+            id_=resource_requestctx.view_args["pid_value"],
+            data=resource_requestctx.data,
+        )
+
+        response = {}
+        if processed:
+            response["processed"] = processed
+        if errors:
+            response["errors"] = errors
+
+        # TODO why not checking errors
+        return response, 200 if len(processed) > 0 else 400
+
+    @request_view_args
+    @request_data
+    @response_handler()
+    def remove_person(self):
+        """Remove record from person."""
+        processed, errors = self.service.remove(
+            identity=g.identity,
+            id_=resource_requestctx.view_args["pid_value"],
+            data=resource_requestctx.data,
+        )
+
+        response = {}
+        if errors:
+            response["errors"] = errors
+
+        return response, 200 if len(processed) > 0 else 400
+
     @request_extra_args
     @request_search_args
     @request_view_args
@@ -389,10 +445,40 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
         )
         return items.to_dict(), 200
 
+    @request_extra_args
+    @request_search_args
+    @request_view_args
+    @response_handler(many=True)
+    def get_persons_suggestions(self):
+        """Search for record's persons."""
+        by_membership = resource_requestctx.args.get("membership", False)
+
+        items = self.service.search_suggested_persons(
+            identity=g.identity,
+            id_=resource_requestctx.view_args["pid_value"],
+            params=resource_requestctx.args,
+            search_preference=search_preference(),
+            by_membership=by_membership,
+            expand=resource_requestctx.args.get("expand", False),
+        )
+        return items.to_dict(), 200
+
     @request_view_args
     @request_data
     def set_default(self):
         """Set default community."""
+        item = self.service.set_default(
+            id_=resource_requestctx.view_args["pid_value"],
+            identity=g.identity,
+            data=resource_requestctx.data,
+        )
+
+        return item, 200
+
+    @request_view_args
+    @request_data
+    def set_default_person(self):
+        """Set default person."""
         item = self.service.set_default(
             id_=resource_requestctx.view_args["pid_value"],
             identity=g.identity,

@@ -12,6 +12,7 @@ import { Header, Modal, Button } from "semantic-ui-react";
 import { CommunityContext } from "./CommunityContext";
 import { CommunitySelectionSearch } from "./CommunitySelectionSearch";
 import _isEmpty from "lodash/isEmpty";
+import { CommunityType } from "../../utils";
 
 export class CommunitySelectionModalComponent extends Component {
   constructor(props) {
@@ -65,6 +66,7 @@ export class CommunitySelectionModalComponent extends Component {
       apiConfigs,
       handleClose,
       record,
+      communityType,
     } = this.props;
 
     return (
@@ -94,7 +96,11 @@ export class CommunitySelectionModalComponent extends Component {
             </Header>
           </Modal.Header>
 
-          <CommunitySelectionSearch apiConfigs={apiConfigs} record={record} />
+          <CommunitySelectionSearch
+            apiConfigs={apiConfigs}
+            record={record}
+            communityType={communityType}
+          />
 
           {extraContentComponents && (
             <Modal.Content>{extraContentComponents}</Modal.Content>
@@ -122,6 +128,7 @@ CommunitySelectionModalComponent.propTypes = {
   apiConfigs: PropTypes.object,
   handleClose: PropTypes.func.isRequired,
   record: PropTypes.object.isRequired,
+  communityType: CommunityType,
 };
 
 CommunitySelectionModalComponent.defaultProps = {

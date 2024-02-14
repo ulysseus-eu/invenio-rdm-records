@@ -259,6 +259,34 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
             **kwargs,
         )
 
+    def search_person(
+        self,
+        identity,
+        id_,
+        params=None,
+        search_preference=None,
+        expand=False,
+        extra_filter=None,
+        **kwargs,
+    ):
+        """Search for record's persons."""
+        record = self.record_cls.pid.resolve(id_)
+        self.require_permission(identity, "read", record=record)
+
+        communities_ids = record.parent.communities.ids
+        communities_filter = dsl.Q("terms", **{"id": [id_ for id_ in communities_ids]})
+        if extra_filter is not None:
+            communities_filter = communities_filter & extra_filter
+
+        return current_communities.service.search_persons(
+            identity,
+            params=params,
+            search_preference=search_preference,
+            expand=expand,
+            extra_filter=communities_filter,
+            **kwargs,
+        )
+
     @staticmethod
     def _get_excluded_communities_filter(record, identity, id_):
         """Return filter to exclude communities that should not be suggested."""
@@ -324,6 +352,47 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
             )
 
         return current_communities.service.search(
+            identity,
+            params=params,
+            search_preference=search_preference,
+            expand=expand,
+            extra_filter=communities_filter,
+            **kwargs,
+        )
+
+    def search_suggested_persons(
+        self,
+        identity,
+        id_,
+        params=None,
+        search_preference=None,
+        expand=False,
+        by_membership=False,
+        extra_filter=None,
+        **kwargs,
+    ):
+        """Search for persons that can be added to a record."""
+        record = self.record_cls.pid.resolve(id_)
+
+        self.require_permission(identity, "add_community", record=record)
+
+        communities_filter = self._get_excluded_communities_filter(
+            record, identity, id_
+        )
+
+        if extra_filter is not None:
+            communities_filter = communities_filter & extra_filter
+
+        if by_membership:
+            return current_communities.service.search_user_persons(
+                identity,
+                params=params,
+                search_preference=search_preference,
+                extra_filter=communities_filter,
+                **kwargs,
+            )
+
+        return current_communities.service.search_persons(
             identity,
             params=params,
             search_preference=search_preference,

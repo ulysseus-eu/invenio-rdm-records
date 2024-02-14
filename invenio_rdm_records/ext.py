@@ -38,6 +38,7 @@ from .resources import (
 )
 from .resources.config import (
     RDMDraftMediaFilesResourceConfig,
+    RDMPersonRecordsResourceConfig,
     RDMRecordMediaFilesResourceConfig,
 )
 from .resources.resources import RDMRecordCommunitiesResource, RDMRecordRequestsResource
@@ -173,6 +174,10 @@ class InvenioRDMRecords(object):
             config=service_configs.community_records,
         )
 
+        self.person_records_service = CommunityRecordsService(
+            config=service_configs.community_records,
+        )
+
         self.community_inclusion_service = CommunityInclusionService()
         self.record_requests_service = RecordRequestsService(
             config=service_configs.record_requests
@@ -238,6 +243,11 @@ class InvenioRDMRecords(object):
         self.community_records_resource = RDMCommunityRecordsResource(
             service=self.community_records_service,
             config=RDMCommunityRecordsResourceConfig.build(app),
+        )
+
+        self.person_records_resource = RDMCommunityRecordsResource(
+            service=self.person_records_service,
+            config=RDMPersonRecordsResourceConfig.build(app),
         )
 
         # OAI-PMH
