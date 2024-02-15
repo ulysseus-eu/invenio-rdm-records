@@ -442,7 +442,7 @@ class RDMPersonRecordsResourceConfig(RecordResourceConfig, ConfiguratorMixin):
 
     blueprint_name = "person-records"
     url_prefix = "/persons"
-    routes = {"list": "/<pid_value>/records"}
+    routes = {"list-persons": "/<pid_value>/records"}
 
     response_handlers = FromConfig(
         "RDM_RECORDS_SERIALIZERS",

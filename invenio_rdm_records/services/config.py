@@ -484,6 +484,45 @@ class RDMCommunityRecordsConfig(BaseRecordServiceConfig, ConfiguratorMixin):
     links_item = RDMRecordServiceConfig.links_item
 
 
+class RDMPersonRecordsConfig(BaseRecordServiceConfig, ConfiguratorMixin):
+    """Person records service config."""
+
+    service_id = "person-records"
+    record_cls = FromConfig("RDM_RECORD_CLS", default=RDMRecord)
+    community_cls = Community
+    permission_policy_cls = FromConfig(
+        "RDM_PERMISSION_POLICY", default=RDMRecordPermissionPolicy, import_string=True
+    )
+
+    # Search configuration
+    search = FromConfigSearchOptions(
+        "RDM_SEARCH",
+        "RDM_SORT_OPTIONS",
+        "RDM_FACETS",
+        search_option_cls=RDMSearchOptions,
+        search_option_cls_key="RDM_SEARCH_OPTIONS_CLS",
+    )
+    search_versions = FromConfigSearchOptions(
+        "RDM_SEARCH_VERSIONING",
+        "RDM_SORT_OPTIONS",
+        "RDM_FACETS",
+        search_option_cls=RDMSearchVersionsOptions,
+    )
+
+    # Service schemas
+    community_record_schema = CommunityRecordsSchema
+    schema = RDMRecordSchema
+
+    # Max n. records that can be removed at once
+    max_number_of_removals = 10
+
+    links_search_community_records = pagination_links(
+        "{+api}/persons/{id}/records{?args*}"
+    )
+
+    links_item = RDMRecordServiceConfig.links_item
+
+
 class RDMRecordMediaFilesServiceConfig(RDMRecordServiceConfig):
     """RDM Record with media files service config."""
 

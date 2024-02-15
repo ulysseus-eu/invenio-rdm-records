@@ -25,6 +25,8 @@ from .resources import (
     IIIFResourceConfig,
     RDMCommunityRecordsResource,
     RDMCommunityRecordsResourceConfig,
+    RDMPersonRecordsResource,
+    RDMPersonRecordsResourceConfig,
     RDMDraftFilesResourceConfig,
     RDMParentGrantsResource,
     RDMParentGrantsResourceConfig,
@@ -38,7 +40,6 @@ from .resources import (
 )
 from .resources.config import (
     RDMDraftMediaFilesResourceConfig,
-    RDMPersonRecordsResourceConfig,
     RDMRecordMediaFilesResourceConfig,
 )
 from .resources.resources import RDMRecordCommunitiesResource, RDMRecordRequestsResource
@@ -46,6 +47,7 @@ from .services import (
     CommunityRecordsService,
     IIIFService,
     RDMCommunityRecordsConfig,
+    RDMPersonRecordsConfig,
     RDMFileDraftServiceConfig,
     RDMFileRecordServiceConfig,
     RDMRecordCommunitiesConfig,
@@ -137,6 +139,7 @@ class InvenioRDMRecords(object):
             oaipmh_server = OAIPMHServerServiceConfig
             record_communities = RDMRecordCommunitiesConfig.build(app)
             community_records = RDMCommunityRecordsConfig.build(app)
+            person_records = RDMPersonRecordsConfig.build(app)
             record_requests = RDMRecordRequestsConfig.build(app)
 
         return ServiceConfigs
@@ -175,7 +178,7 @@ class InvenioRDMRecords(object):
         )
 
         self.person_records_service = CommunityRecordsService(
-            config=service_configs.community_records,
+            config=service_configs.person_records,
         )
 
         self.community_inclusion_service = CommunityInclusionService()
@@ -245,7 +248,7 @@ class InvenioRDMRecords(object):
             config=RDMCommunityRecordsResourceConfig.build(app),
         )
 
-        self.person_records_resource = RDMCommunityRecordsResource(
+        self.person_records_resource = RDMPersonRecordsResource(
             service=self.person_records_service,
             config=RDMPersonRecordsResourceConfig.build(app),
         )
