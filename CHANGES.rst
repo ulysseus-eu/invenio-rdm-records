@@ -11,6 +11,28 @@
 Changes
 =======
 
+Version 6.2.1 (released 2024-02-11)
+
+- requests: add record to parent community
+
+Version 6.2.0 (released 2024-02-09)
+
+- tests: make deleted file fetching deterministic
+- deposit: change upload workflow for styled communities
+- deposit: indicate if community selection modal is used for initial submission
+- deposit: add community.theme.enabled to selection modal
+- installation: bump invenio-communities version
+
+Version 6.1.1 (released 2024-02-05)
+
+- oai: exclude deleted records from search
+- models: add bucket_id index
+- serializers: fix DataDownload missing mimetype
+
+Version 6.1.0 (released 2024-02-01)
+
+- Add CSV records serializer
+
 Version 6.0.0 (released 2024-01-31)
 
 - installation: bump dependencies
