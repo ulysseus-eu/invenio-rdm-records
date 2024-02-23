@@ -247,6 +247,24 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
 
         communities_ids = record.parent.communities.ids
         communities_filter = dsl.Q("terms", **{"id": [id_ for id_ in communities_ids]})
+        excluded_types_filter = dsl.Q(
+            {
+                "bool": {
+                    "must_not": [
+                        {
+                            "term": {
+                                "metadata.type.id": "person"
+                            }
+                        },
+                        {
+                            "term": {
+                                "metadata.type.id": "organization"
+                            }
+                        }
+                    ]
+                }
+            })
+        communities_filter &= excluded_types_filter
         if extra_filter is not None:
             communities_filter = communities_filter & extra_filter
 
