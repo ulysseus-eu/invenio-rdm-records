@@ -42,7 +42,11 @@ from .resources.config import (
     RDMDraftMediaFilesResourceConfig,
     RDMRecordMediaFilesResourceConfig,
 )
-from .resources.resources import RDMRecordCommunitiesResource, RDMRecordRequestsResource
+from .resources.resources import (
+    RDMOrganizationRecordsResource,
+    RDMRecordCommunitiesResource,
+    RDMRecordRequestsResource
+)
 from .services import (
     CommunityRecordsService,
     IIIFService,
@@ -62,7 +66,7 @@ from .services.community_inclusion.service import CommunityInclusionService
 from .services.config import (
     RDMMediaFileDraftServiceConfig,
     RDMMediaFileRecordServiceConfig,
-    RDMRecordMediaFilesServiceConfig,
+    RDMOrganizationRecordsConfig, RDMRecordMediaFilesServiceConfig,
 )
 from .services.files import RDMFileService
 from .services.pids import PIDManager, PIDsService
@@ -140,6 +144,7 @@ class InvenioRDMRecords(object):
             record_communities = RDMRecordCommunitiesConfig.build(app)
             community_records = RDMCommunityRecordsConfig.build(app)
             person_records = RDMPersonRecordsConfig.build(app)
+            organization_records = RDMOrganizationRecordsConfig.build(app)
             record_requests = RDMRecordRequestsConfig.build(app)
 
         return ServiceConfigs
@@ -179,6 +184,10 @@ class InvenioRDMRecords(object):
 
         self.person_records_service = CommunityRecordsService(
             config=service_configs.person_records,
+        )
+
+        self.organization_records_service = CommunityRecordsService(
+            config=service_configs.organization_records,
         )
 
         self.community_inclusion_service = CommunityInclusionService()
@@ -251,6 +260,11 @@ class InvenioRDMRecords(object):
         self.person_records_resource = RDMPersonRecordsResource(
             service=self.person_records_service,
             config=RDMPersonRecordsResourceConfig.build(app),
+        )
+
+        self.organization_records_resource = RDMOrganizationRecordsResource(
+            service=self.organization_records_service,
+            config=RDMOrganizationRecordsConfig.build(app),
         )
 
         # OAI-PMH

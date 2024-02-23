@@ -458,8 +458,10 @@ class RDMRecordCommunitiesResourceConfig(CommunityResourceConfig, ConfiguratorMi
     routes = {
         "list": "/<pid_value>/communities",
         "list-persons": "/<pid_value>/persons",
+        "list-organizations": "/<pid_value>/organizations",
         "suggestions": "/<pid_value>/communities-suggestions",
         "persons-suggestions": "/<pid_value>/persons-suggestions",
+        "organizations-suggestions": "/<pid_value>/organizations-suggestions",
     }
 
     request_extra_args = {

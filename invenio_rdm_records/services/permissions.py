@@ -214,6 +214,7 @@ class RDMRecordPermissionPolicy(RecordPermissionPolicy):
     ]
     # Who can remove records from a community
     can_remove_record = [CommunityCurators()]
+    can_add_record = [CommunityCurators()]
 
     #
     # Media files - draft

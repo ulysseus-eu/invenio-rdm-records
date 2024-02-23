@@ -21,7 +21,7 @@ import {
 import { Grid, Menu, Modal } from "semantic-ui-react";
 import { CommunityListItem } from "./CommunityListItem";
 import PropTypes from "prop-types";
-import { CommunityType } from "../../utils";
+import { CommunityType } from "@js/invenio_communities";
 
 export class CommunitySelectionSearch extends Component {
   constructor(props) {

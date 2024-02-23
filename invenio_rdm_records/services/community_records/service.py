@@ -102,6 +102,15 @@ class CommunityRecordsService(RecordService):
 
         return errors
 
+    def _add(self, community, record, identity):
+        """Add a community to the record."""
+        data = dict(communities=[dict(id=str(community.id))])
+        _, errors = current_record_communities_service.add(
+            identity, id_=record.pid.pid_value, data=data
+        )
+
+        return errors
+
     @unit_of_work()
     def delete(self, identity, community_id, data, revision_id=None, uow=None):
         """Remove records from a community."""
@@ -124,6 +133,45 @@ class CommunityRecordsService(RecordService):
             try:
                 record = self.record_cls.pid.resolve(record_id)
                 errors += self._remove(community, record, identity)
+            except PIDDoesNotExistError:
+                errors.append(
+                    {
+                        "record": record_id,
+                        "message": _("The record does not exist."),
+                    }
+                )
+            except PermissionDeniedError:
+                errors.append(
+                    {
+                        "record": record_id,
+                        "message": _("Permission denied."),
+                    }
+                )
+
+        return errors
+
+    @unit_of_work()
+    def add(self, identity, community_id, data, revision_id=None, uow=None):
+        """Add records to a community."""
+        community = self.community_cls.pid.resolve(community_id)
+
+        self.require_permission(identity, "add_record", record=community)
+
+        valid_data, errors = self.community_record_schema.load(
+            data,
+            context={
+                "identity": identity,
+                "max_number": self.config.max_number_of_additions,
+            },
+            raise_errors=True,
+        )
+        records_dict = valid_data["records"]
+
+        for record_dict in records_dict:
+            record_id = record_dict["id"]
+            try:
+                record = self.record_cls.pid.resolve(record_id)
+                errors += self._add(community, record, identity)
             except PIDDoesNotExistError:
                 errors.append(
                     {

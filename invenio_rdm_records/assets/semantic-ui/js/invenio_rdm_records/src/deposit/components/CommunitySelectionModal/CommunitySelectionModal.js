@@ -12,7 +12,7 @@ import { Header, Modal, Button } from "semantic-ui-react";
 import { CommunityContext } from "./CommunityContext";
 import { CommunitySelectionSearch } from "./CommunitySelectionSearch";
 import _isEmpty from "lodash/isEmpty";
-import { CommunityType } from "../../utils";
+import { CommunityType } from "@js/invenio_communities";
 
 export class CommunitySelectionModalComponent extends Component {
   constructor(props) {

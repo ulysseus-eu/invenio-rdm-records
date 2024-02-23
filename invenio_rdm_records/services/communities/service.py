@@ -275,10 +275,42 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
 
         communities_ids = record.parent.communities.ids
         communities_filter = dsl.Q("terms", **{"id": [id_ for id_ in communities_ids]})
+        persons_filter = dsl.Q("term", **{"metadata.type.id": "person"})
+        communities_filter &= persons_filter
         if extra_filter is not None:
             communities_filter = communities_filter & extra_filter
 
-        return current_communities.service.search_persons(
+        return current_communities.service.search(
+            identity,
+            params=params,
+            search_preference=search_preference,
+            expand=expand,
+            extra_filter=communities_filter,
+            **kwargs,
+        )
+
+    def search_organization(
+        self,
+        identity,
+        id_,
+        params=None,
+        search_preference=None,
+        expand=False,
+        extra_filter=None,
+        **kwargs,
+    ):
+        """Search for record's organizations."""
+        record = self.record_cls.pid.resolve(id_)
+        self.require_permission(identity, "read", record=record)
+
+        communities_ids = record.parent.communities.ids
+        communities_filter = dsl.Q("terms", **{"id": [id_ for id_ in communities_ids]})
+        organizations_filter = dsl.Q("term", **{"metadata.type.id": "organization"})
+        communities_filter &= organizations_filter
+        if extra_filter is not None:
+            communities_filter = communities_filter & extra_filter
+
+        return current_communities.service.search(
             identity,
             params=params,
             search_preference=search_preference,
@@ -338,6 +370,24 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
         communities_filter = self._get_excluded_communities_filter(
             record, identity, id_
         )
+        excluded_types_filter = dsl.Q(
+            {
+                "bool": {
+                    "must_not": [
+                        {
+                            "term": {
+                                "metadata.type.id": "person"
+                            }
+                        },
+                        {
+                            "term": {
+                                "metadata.type.id": "organization"
+                            }
+                        }
+                    ]
+                }
+            })
+        communities_filter &= excluded_types_filter
 
         if extra_filter is not None:
             communities_filter = communities_filter & extra_filter
@@ -379,12 +429,14 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
         communities_filter = self._get_excluded_communities_filter(
             record, identity, id_
         )
+        persons_filter = dsl.Q("term", **{"metadata.type.id": "person"})
+        communities_filter &= persons_filter
 
         if extra_filter is not None:
             communities_filter = communities_filter & extra_filter
 
         if by_membership:
-            return current_communities.service.search_user_persons(
+            return current_communities.service.search_user_communities(
                 identity,
                 params=params,
                 search_preference=search_preference,
@@ -392,7 +444,50 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
                 **kwargs,
             )
 
-        return current_communities.service.search_persons(
+        return current_communities.service.search(
+            identity,
+            params=params,
+            search_preference=search_preference,
+            expand=expand,
+            extra_filter=communities_filter,
+            **kwargs,
+        )
+
+    def search_suggested_organizations(
+        self,
+        identity,
+        id_,
+        params=None,
+        search_preference=None,
+        expand=False,
+        by_membership=False,
+        extra_filter=None,
+        **kwargs,
+    ):
+        """Search for organizations that can be added to a record."""
+        record = self.record_cls.pid.resolve(id_)
+
+        self.require_permission(identity, "add_community", record=record)
+
+        communities_filter = self._get_excluded_communities_filter(
+            record, identity, id_
+        )
+        organizations_filter = dsl.Q("term", **{"metadata.type.id": "organization"})
+        communities_filter &= organizations_filter
+
+        if extra_filter is not None:
+            communities_filter = communities_filter & extra_filter
+
+        if by_membership:
+            return current_communities.service.search_user_communities(
+                identity,
+                params=params,
+                search_preference=search_preference,
+                extra_filter=communities_filter,
+                **kwargs,
+            )
+
+        return current_communities.service.search(
             identity,
             params=params,
             search_preference=search_preference,

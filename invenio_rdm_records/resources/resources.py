@@ -320,8 +320,13 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
             route("GET", routes["list-persons"], self.search_persons),
             route("POST", routes["list-persons"], self.add_person),
             route("DELETE", routes["list-persons"], self.remove_person),
-            route("PUT", routes["list-persons"], self.set_default_person),
             route("GET", routes["persons-suggestions"], self.get_persons_suggestions),
+            route("PUT", routes["list-persons"], self.set_default_person),
+            route("GET", routes["list-organizations"], self.search_organizations),
+            route("POST", routes["list-organizations"], self.add_organization),
+            route("DELETE", routes["list-organizations"], self.remove_organization),
+            route("GET", routes["organizations-suggestions"], self.get_organizations_suggestions),
+            route("PUT", routes["list-organizations"], self.set_default_organization),
         ]
         return url_rules
 
@@ -345,6 +350,20 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
     def search_persons(self):
         """Search for record's persons."""
         items = self.service.search_person(
+            identity=g.identity,
+            id_=resource_requestctx.view_args["pid_value"],
+            params=resource_requestctx.args,
+            search_preference=search_preference(),
+            expand=resource_requestctx.args.get("expand", False)
+        )
+        return items.to_dict(), 200
+
+    @request_search_args
+    @request_view_args
+    @response_handler(many=True)
+    def search_organizations(self):
+        """Search for record's organizations."""
+        items = self.service.search_organization(
             identity=g.identity,
             id_=resource_requestctx.view_args["pid_value"],
             params=resource_requestctx.args,
@@ -411,10 +430,47 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
         return response, 200 if len(processed) > 0 else 400
 
     @request_view_args
+    @response_handler()
+    @request_data
+    def add_organization(self):
+        """Include record in organizations."""
+        processed, errors = self.service.add(
+            identity=g.identity,
+            id_=resource_requestctx.view_args["pid_value"],
+            data=resource_requestctx.data,
+        )
+
+        response = {}
+        if processed:
+            response["processed"] = processed
+        if errors:
+            response["errors"] = errors
+
+        # TODO why not checking errors
+        return response, 200 if len(processed) > 0 else 400
+
+    @request_view_args
     @request_data
     @response_handler()
     def remove_person(self):
         """Remove record from person."""
+        processed, errors = self.service.remove(
+            identity=g.identity,
+            id_=resource_requestctx.view_args["pid_value"],
+            data=resource_requestctx.data,
+        )
+
+        response = {}
+        if errors:
+            response["errors"] = errors
+
+        return response, 200 if len(processed) > 0 else 400
+
+    @request_view_args
+    @request_data
+    @response_handler()
+    def remove_organization(self):
+        """Remove record from organization."""
         processed, errors = self.service.remove(
             identity=g.identity,
             id_=resource_requestctx.view_args["pid_value"],
@@ -463,6 +519,24 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
         )
         return items.to_dict(), 200
 
+    @request_extra_args
+    @request_search_args
+    @request_view_args
+    @response_handler(many=True)
+    def get_organizations_suggestions(self):
+        """Search for record's organizations."""
+        by_membership = resource_requestctx.args.get("membership", False)
+
+        items = self.service.search_suggested_organizations(
+            identity=g.identity,
+            id_=resource_requestctx.view_args["pid_value"],
+            params=resource_requestctx.args,
+            search_preference=search_preference(),
+            by_membership=by_membership,
+            expand=resource_requestctx.args.get("expand", False),
+        )
+        return items.to_dict(), 200
+
     @request_view_args
     @request_data
     def set_default(self):
@@ -479,6 +553,18 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
     @request_data
     def set_default_person(self):
         """Set default person."""
+        item = self.service.set_default(
+            id_=resource_requestctx.view_args["pid_value"],
+            identity=g.identity,
+            data=resource_requestctx.data,
+        )
+
+        return item, 200
+
+    @request_view_args
+    @request_data
+    def set_default_organization(self):
+        """Set default organization."""
         item = self.service.set_default(
             id_=resource_requestctx.view_args["pid_value"],
             identity=g.identity,
@@ -780,6 +866,7 @@ class RDMPersonRecordsResource(RecordResource):
         routes = self.config.routes
         url_rules = [
             route("GET", p(routes["list-persons"]), self.search),
+            route("POST", p(routes["list-persons"]), self.add),
             route("DELETE", p(routes["list-persons"]), self.delete),
         ]
 
@@ -804,9 +891,96 @@ class RDMPersonRecordsResource(RecordResource):
     def delete(self):
         """Removes records from the communities.
 
-        DELETE /communities/<pid_value>/records
+        DELETE /persons/<pid_value>/records
         """
         errors = self.service.delete(
+            identity=g.identity,
+            community_id=resource_requestctx.view_args["pid_value"],
+            data=resource_requestctx.data,
+        )
+        response = {}
+        if errors:
+            response["errors"] = errors
+        return response, 200
+
+    @request_view_args
+    @response_handler()
+    @request_data
+    def add(self):
+        """Adds records to the communities.
+
+        POST /persons/<pid_value>/records
+        """
+        errors = self.service.add(
+            identity=g.identity,
+            community_id=resource_requestctx.view_args["pid_value"],
+            data=resource_requestctx.data,
+        )
+        response = {}
+        if errors:
+            response["errors"] = errors
+        return response, 200
+
+
+class RDMOrganizationRecordsResource(RecordResource):
+    """RDM organization's records resource."""
+
+    def create_url_rules(self):
+        """Create the URL rules for the record resource."""
+
+        def p(route):
+            """Prefix a route with the URL prefix."""
+            return f"{self.config.url_prefix}{route}"
+
+        routes = self.config.routes
+        url_rules = [
+            route("GET", p(routes["list-organizations"]), self.search),
+            route("POST", p(routes["list-organizations"]), self.add),
+            route("DELETE", p(routes["list-organizations"]), self.delete),
+        ]
+
+        return url_rules
+
+    @request_search_args
+    @request_view_args
+    @response_handler(many=True)
+    def search(self):
+        """Perform a search over the community's records."""
+        hits = self.service.search(
+            identity=g.identity,
+            community_id=resource_requestctx.view_args["pid_value"],
+            params=resource_requestctx.args,
+            search_preference=search_preference(),
+        )
+        return hits.to_dict(), 200
+
+    @request_view_args
+    @response_handler()
+    @request_data
+    def delete(self):
+        """Removes records from the communities.
+
+        DELETE /organizations/<pid_value>/records
+        """
+        errors = self.service.delete(
+            identity=g.identity,
+            community_id=resource_requestctx.view_args["pid_value"],
+            data=resource_requestctx.data,
+        )
+        response = {}
+        if errors:
+            response["errors"] = errors
+        return response, 200
+
+    @request_view_args
+    @response_handler()
+    @request_data
+    def add(self):
+        """Adds records to the communities.
+
+        POST /organizations/<pid_value>/records
+        """
+        errors = self.service.add(
             identity=g.identity,
             community_id=resource_requestctx.view_args["pid_value"],
             data=resource_requestctx.data,
