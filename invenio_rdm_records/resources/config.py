@@ -450,6 +450,19 @@ class RDMPersonRecordsResourceConfig(RecordResourceConfig, ConfiguratorMixin):
     )
 
 
+class RDMOrganizationRecordsResourceConfig(RecordResourceConfig, ConfiguratorMixin):
+    """Organization's records resource config."""
+
+    blueprint_name = "organization-records"
+    url_prefix = "/organizations"
+    routes = {"list-organizations": "/<pid_value>/records"}
+
+    response_handlers = FromConfig(
+        "RDM_RECORDS_SERIALIZERS",
+        default=record_serializers,
+    )
+
+
 class RDMRecordCommunitiesResourceConfig(CommunityResourceConfig, ConfiguratorMixin):
     """Record communities resource config."""
 

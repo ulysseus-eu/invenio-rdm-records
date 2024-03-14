@@ -19,6 +19,7 @@ from .config import (
     RDMRecordRequestsResourceConfig,
     RDMRecordResourceConfig,
     RDMPersonRecordsResourceConfig,
+    RDMOrganizationRecordsResourceConfig,
 )
 from .resources import (
     IIIFResource,
@@ -28,6 +29,7 @@ from .resources import (
     RDMRecordRequestsResource,
     RDMRecordResource,
     RDMPersonRecordsResource,
+    RDMOrganizationRecordsResource,
 )
 
 __all__ = (
@@ -37,6 +39,8 @@ __all__ = (
     "RDMCommunityRecordsResourceConfig",
     "RDMPersonRecordsResource",
     "RDMPersonRecordsResourceConfig",
+    "RDMOrganizationRecordsResource",
+    "RDMOrganizationRecordsResourceConfig",
     "RDMDraftFilesResourceConfig",
     "RDMParentGrantsResource",
     "RDMParentGrantsResourceConfig",
