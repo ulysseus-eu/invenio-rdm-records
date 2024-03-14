@@ -99,6 +99,12 @@ def create_person_records_bp(app):
     return ext.person_records_resource.as_blueprint()
 
 
+def create_organization_records_bp(app):
+    """Create organization's records blueprint."""
+    ext = app.extensions["invenio-rdm-records"]
+    return ext.organization_records_resource.as_blueprint()
+
+
 def create_record_communities_bp(app):
     """Create record communities blueprint."""
     return app.extensions[

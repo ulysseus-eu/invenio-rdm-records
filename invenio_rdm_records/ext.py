@@ -53,6 +53,7 @@ from .services import (
     IIIFService,
     RDMCommunityRecordsConfig,
     RDMPersonRecordsConfig,
+    RDMOrganizationRecordsConfig,
     RDMFileDraftServiceConfig,
     RDMFileRecordServiceConfig,
     RDMRecordCommunitiesConfig,
@@ -67,7 +68,7 @@ from .services.community_inclusion.service import CommunityInclusionService
 from .services.config import (
     RDMMediaFileDraftServiceConfig,
     RDMMediaFileRecordServiceConfig,
-    RDMOrganizationRecordsConfig, RDMRecordMediaFilesServiceConfig,
+    RDMRecordMediaFilesServiceConfig,
 )
 from .services.files import RDMFileService
 from .services.pids import PIDManager, PIDsService
