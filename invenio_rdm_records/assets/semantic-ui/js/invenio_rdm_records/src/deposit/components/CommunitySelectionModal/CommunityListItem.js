@@ -1,5 +1,5 @@
 // This file is part of Invenio-RDM-Records
-// Copyright (C) 2020-2023 CERN.
+// Copyright (C) 2020-2024 CERN.
 //
 // Invenio-RDM-Records is free software; you can redistribute it and/or modify it
 // under the terms of the MIT License; see LICENSE file for more details.
@@ -58,13 +58,8 @@ export const CommunityListItem = ({ result, record, isInitialSubmission }) => {
               "Submission to this community is only allowed by dedicated upload form. Use the button to jump to the form."
             )}
           />
-          <Button
-            size="tiny"
-            primary
-            as="a"
-            href={`/communities/${result.slug}/upload`}
-          >
-            Community upload form
+          <Button size="tiny" as="a" href={`/communities/${result.slug}`}>
+            Go to the community
           </Button>
         </>
       )}
@@ -95,7 +90,7 @@ export const CommunityListItem = ({ result, record, isInitialSubmission }) => {
       )}
       {hasTheme && (
         <Label color="green" horizontal size="small">
-          <Icon name="certificate" />
+          <Icon name="check circle" />
           Verified
         </Label>
       )}

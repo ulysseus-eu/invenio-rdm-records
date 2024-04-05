@@ -65,6 +65,7 @@ export class CommunitySelectionSearch extends Component {
           searchApi={searchApi}
           key={selectedAppId}
           initialQueryState={selectedInitialQueryState}
+          defaultSortingOnEmptyQueryString={{ sortBy: "bestmatch" }}
         >
           <>
             <Modal.Content as={Grid} className="m-0 pb-0">
@@ -177,7 +178,7 @@ CommunitySelectionSearch.defaultProps = {
   isInitialSubmission: true,
   apiConfigs: {
     allCommunities: {
-      initialQueryState: { size: 5, page: 1 },
+      initialQueryState: { size: 5, page: 1, sortBy: "bestmatch" },
       searchApi: {
         axios: {
           url: "/api/communities",
@@ -188,7 +189,7 @@ CommunitySelectionSearch.defaultProps = {
       toggleText: "Search in all communities",
     },
     myCommunities: {
-      initialQueryState: { size: 5, page: 1 },
+      initialQueryState: { size: 5, page: 1, sortBy: "bestmatch" },
       searchApi: {
         axios: {
           url: "/api/user/communities",

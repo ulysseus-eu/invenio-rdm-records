@@ -11,6 +11,82 @@
 Changes
 =======
 
+Version 9.1.0 (released 2024-04-04)
+
+- api: added new endpoint to manage access restrictions of records
+- deposit: improved communities sorting when uploading a new record
+- serializers: marcxml: fixes to transformation rules
+
+Version 9.0.1 (released 2024-03-25)
+
+- serializers: DataCite to DCAT-AP - fix missing prov namespace for contributors project roles
+- serializers: DataCite to DCAT-AP - include upstream editorial changes
+- serializers: marcxml: Add leader to schema
+
+Version 9.0.0 (released 2024-03-23)
+
+- views: add signposting
+- fixtures: added subject type creation on load
+- contrib: change pages label and journal examples
+- creatibutors: switch remove and edit button order
+- serializers: add geolocation box and polygon to datacite
+- serializers: fix longitude and latitude order to match geojson.
+- resource-types: fix schema.org Thesis URL
+- resource-types: publication-thesis = schema.org/Thesis
+- resource-types: schema.org URL for Event
+- ux: DOI prefix error message improvement
+- init: move record_once to finalize_app
+
+Version 8.3.0 (released 2024-03-06)
+
+- services: introduced bulk_add permission
+- requests: added community transfer request type
+- services: added bulk addition to record community
+- services: add metrics param interpreter
+
+Version 8.2.0 (released 2024-03-05)
+
+- bumps react-invenio-forms
+- ui: center disabled new version popup tooltip
+- fix: show popup tooltip on disabled new version button
+
+Version 8.1.1 (released 2024-02-27)
+
+- Revert "serializers: updated datacite schema rights."
+
+Version 8.1.0 (released 2024-02-27)
+
+- pids: allow empty-string PIDs
+- config: safer parent PID conditional check
+- serializers: updated datacite schema rights
+
+Version 8.0.0 (released 2024-02-20)
+
+- Bump due to major version upgrade in invenio-users-resources
+
+Version 7.1.1 (released 2024-02-19)
+
+- communities: add CommunityParentComponent
+
+Version 7.1.0 (released 2024-02-19)
+
+- mappings: change "dynamic" values to string
+- requests: change default removal reason to spam
+- mappings: add keyword field to ``funding.award.number``
+- files: fixed infinite spinning wheel on error
+- datacite: added config for funders id priority
+- datacite: updated schema
+- mapping: add community children
+
+Version 7.0.0 (released 2024-02-16)
+
+- services: update community components
+- installation: bump invenio-communities
+- mappings: denormalize communities in records
+- systemfields: fix docstrings
+- requests: add check on parent community on accept
+- community selection: small ui fixes
+
 Version 6.2.1 (released 2024-02-11)
 
 - requests: add record to parent community
@@ -51,7 +127,7 @@ Version 5.0.0 (2024-01-16)
 
 - communities: utilize community theming mechanism
 
-Version 4.43.2 (2023-01-16)
+Version 4.43.2 (2024-01-16)
 
 - dependencies: pin commonmeta-py
 

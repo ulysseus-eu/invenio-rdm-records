@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2021 CERN.
+# Copyright (C) 2021-2024 CERN.
 # Copyright (C) 2021 Northwestern University.
 # Copyright (C) 2023 Graz University of Technology.
+# Copyright (C) 2023 Caltech.
 #
 # Invenio-RDM-Records is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
@@ -79,9 +80,7 @@ class PersonOrOrgSchema43(Schema):
         for identifier in identifiers:
             scheme = identifier["scheme"]
             id_scheme = get_scheme_datacite(
-                scheme,
-                "RDM_RECORDS_PERSONORG_SCHEMES",
-                default=scheme,
+                scheme, "RDM_RECORDS_PERSONORG_SCHEMES", default=scheme
             )
 
             if id_scheme:
@@ -116,9 +115,7 @@ class PersonOrOrgSchema43(Schema):
             affiliations = affiliations_service.read_many(system_identity, ids)
 
             for affiliation in affiliations:
-                aff = {
-                    "name": affiliation["name"],
-                }
+                aff = {"name": affiliation["name"]}
                 identifiers = affiliation.get("identifiers")
                 if identifiers:
                     # FIXME: Make configurable
@@ -293,8 +290,12 @@ class DataCite43Schema(BaseSerializerSchema):
         """Get dates."""
         dates = [{"date": obj["metadata"]["publication_date"], "dateType": "Issued"}]
 
+        updated = False
+
         for date in obj["metadata"].get("dates", []):
             date_type_id = date.get("type", {}).get("id")
+            if date_type_id == "updated":
+                updated = True
             props = get_vocabulary_props("datetypes", ["props.datacite"], date_type_id)
             to_append = {
                 "date": date["date"],
@@ -305,6 +306,19 @@ class DataCite43Schema(BaseSerializerSchema):
                 to_append["dateInformation"] = desc
 
             dates.append(to_append)
+
+        if not updated:
+            try:
+                updated_date = obj["updated"]
+            except KeyError:
+                pass
+                # If no update date is present, do nothing. Happens with some tests, but should not in live repository
+            else:
+                to_append = {
+                    "date": updated_date.split("T")[0],
+                    "dateType": "Updated",
+                }
+                dates.append(to_append)
 
         return dates or missing
 
@@ -333,17 +347,12 @@ class DataCite43Schema(BaseSerializerSchema):
         pids = obj["pids"]
         for scheme, id_ in pids.items():
             id_scheme = get_scheme_datacite(
-                scheme,
-                "RDM_RECORDS_IDENTIFIERS_SCHEMES",
-                default=scheme,
+                scheme, "RDM_RECORDS_IDENTIFIERS_SCHEMES", default=scheme
             )
 
             if id_scheme:
                 serialized_identifiers.append(
-                    {
-                        "identifier": id_["identifier"],
-                        "identifierType": id_scheme,
-                    }
+                    {"identifier": id_["identifier"], "identifierType": id_scheme}
                 )
 
         # Identifiers field
@@ -359,10 +368,7 @@ class DataCite43Schema(BaseSerializerSchema):
                 # dropped
                 if id_scheme != "DOI":
                     serialized_identifiers.append(
-                        {
-                            "identifier": id_["identifier"],
-                            "identifierType": id_scheme,
-                        }
+                        {"identifier": id_["identifier"], "identifierType": id_scheme}
                     )
 
         return serialized_identifiers or missing
@@ -380,9 +386,7 @@ class DataCite43Schema(BaseSerializerSchema):
 
             scheme = rel_id["scheme"]
             id_scheme = get_scheme_datacite(
-                scheme,
-                "RDM_RECORDS_IDENTIFIERS_SCHEMES",
-                default=scheme,
+                scheme, "RDM_RECORDS_IDENTIFIERS_SCHEMES", default=scheme
             )
 
             # Only serialize related identifiers with a valid scheme for DataCite.
@@ -485,12 +489,45 @@ class DataCite43Schema(BaseSerializerSchema):
             if geometry:
                 geo_type = geometry["type"]
                 # PIDS-FIXME: Scalable enough?
-                # PIDS-FIXME: Implement Box and Polygon serialization
                 if geo_type == "Point":
                     serialized_location["geoLocationPoint"] = {
-                        "pointLatitude": geometry["coordinates"][0],
-                        "pointLongitude": geometry["coordinates"][1],
+                        "pointLongitude": str(geometry["coordinates"][0]),
+                        "pointLatitude": str(geometry["coordinates"][1]),
                     }
+                elif geo_type == "Polygon":
+                    # geojson has a layer of nesting before actual coordinates
+                    coords = geometry["coordinates"][0]
+                    # First we see if we have a box
+                    box = False
+                    if len(coords) in [4, 5]:
+                        # A box polygon may wrap around with 5 coordinates
+                        x_coords = set()
+                        y_coords = set()
+                        for coord in coords:
+                            x_coords.add(coord[0])
+                            y_coords.add(coord[1])
+                        if len(x_coords) == 2 and len(y_coords) == 2:
+                            x_coords = sorted(x_coords)
+                            y_coords = sorted(y_coords)
+                            serialized_location["geoLocationBox"] = {
+                                "westBoundLongitude": str(x_coords[0]),
+                                "eastBoundLongitude": str(x_coords[1]),
+                                "southBoundLatitude": str(y_coords[0]),
+                                "northBoundLatitude": str(y_coords[1]),
+                            }
+                            box = True
+                    if not box:
+                        polygon = []
+                        for coord in coords:
+                            polygon.append(
+                                {
+                                    "polygonPoint": {
+                                        "pointLongitude": str(coord[0]),
+                                        "pointLatitude": str(coord[1]),
+                                    }
+                                }
+                            )
+                        serialized_location["geoLocationPolygon"] = polygon
 
             locations.append(serialized_location)
         return locations or missing
@@ -545,7 +582,7 @@ class DataCite43Schema(BaseSerializerSchema):
                 ids.append(_id)
             else:
                 serialized_right = {
-                    "rights": right.get("title").get(current_default_locale()),
+                    "rights": right.get("title").get(current_default_locale())
                 }
 
                 link = right.get("link")
@@ -573,12 +610,15 @@ class DataCite43Schema(BaseSerializerSchema):
     def get_funding(self, obj):
         """Get funding references."""
         # constants
-        DATACITE_FUNDER_IDENTIFIER_TYPES_PREFERENCE = (
-            "ror",
-            "grid",
-            "doi",
-            "isni",
-            "gnd",
+        FUNDER_ID_TYPES_PREF = current_app.config.get(
+            "RDM_DATACITE_FUNDER_IDENTIFIERS_PRIORITY",
+            (
+                "ror",
+                "doi",
+                "grid",
+                "isni",
+                "gnd",
+            ),
         )
         DATACITE_AWARD_IDENTIFIER_TYPES_PREFERENCE = ("doi", "url")
         TO_FUNDER_IDENTIFIER_TYPES = {
@@ -602,9 +642,7 @@ class DataCite43Schema(BaseSerializerSchema):
             funding_ref["funderName"] = funder["name"]
             identifiers = funder.get("identifiers", [])
             if identifiers:
-                identifier = get_preferred_identifier(
-                    DATACITE_FUNDER_IDENTIFIER_TYPES_PREFERENCE, identifiers
-                )
+                identifier = get_preferred_identifier(FUNDER_ID_TYPES_PREF, identifiers)
                 if not identifier:
                     identifier = identifiers[0]
                     identifier["scheme"] = "Other"
@@ -619,9 +657,6 @@ class DataCite43Schema(BaseSerializerSchema):
             if award:  # having an award is optional
                 id_ = award.get("id")
                 if id_:
-                    # FIXME: should this be implemented at awards service read
-                    # level since all ids are loaded into the system with this
-                    # format?
                     award_service = current_service_registry.get("awards")
                     award = award_service.read(system_identity, id_).to_dict()
 

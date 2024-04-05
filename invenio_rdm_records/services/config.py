@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2020-2021 CERN.
+# Copyright (C) 2020-2024 CERN.
 # Copyright (C) 2020-2021 Northwestern University.
 # Copyright (C)      2021 TU Wien.
 # Copyright (C) 2021-2023 Graz University of Technology.
@@ -69,13 +69,19 @@ from .schemas import RDMParentSchema, RDMRecordSchema
 from .schemas.community_records import CommunityRecordsSchema
 from .schemas.parent.access import AccessSettingsSchema
 from .schemas.parent.access import Grant as GrantSchema
+from .schemas.parent.access import Grants as GrantsSchema
 from .schemas.parent.access import RequestAccessSchema
 from .schemas.parent.access import SecretLink as SecretLinkSchema
 from .schemas.parent.communities import CommunitiesSchema
 from .schemas.quota import QuotaSchema
 from .schemas.record_communities import RecordCommunitiesSchema
 from .schemas.tombstone import TombstoneSchema
-from .search_params import MyDraftsParam, PublishedRecordsParam, StatusParam
+from .search_params import (
+    MetricsParam,
+    MyDraftsParam,
+    PublishedRecordsParam,
+    StatusParam,
+)
 from .sort import VerifiedRecordsSortParam
 
 
@@ -147,6 +153,7 @@ class RDMSearchOptions(SearchOptions, SearchOptionsMixin):
         VerifiedRecordsSortParam,
         StatusParam,
         PublishedRecordsParam,
+        MetricsParam,
     ]
 
 
@@ -231,6 +238,7 @@ class RDMRecordServiceConfig(RecordServiceConfig, ConfiguratorMixin):
     schema_access_settings = AccessSettingsSchema
     schema_secret_link = SecretLinkSchema
     schema_grant = GrantSchema
+    schema_grants = GrantsSchema
     schema_request_access = RequestAccessSchema
     schema_tombstone = TombstoneSchema
     schema_quota = QuotaSchema
@@ -428,6 +436,7 @@ class RDMRecordServiceConfig(RecordServiceConfig, ConfiguratorMixin):
         ),
         "versions": RecordLink("{+api}/records/{id}/versions"),
         "access_links": RecordLink("{+api}/records/{id}/access/links"),
+        "access_grants": RecordLink("{+api}/records/{id}/access/grants"),
         "access_users": RecordLink("{+api}/records/{id}/access/users"),
         "access_request": RecordLink("{+api}/records/{id}/access/request"),
         "access": RecordLink("{+api}/records/{id}/access"),
