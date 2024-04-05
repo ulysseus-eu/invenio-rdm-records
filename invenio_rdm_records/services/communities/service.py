@@ -247,24 +247,26 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
 
         communities_ids = record.parent.communities.ids
         communities_filter = dsl.Q("terms", **{"id": [id_ for id_ in communities_ids]})
-        excluded_types_filter = dsl.Q(
-            {
-                "bool": {
-                    "must_not": [
-                        {
-                            "term": {
-                                "metadata.type.id": "person"
+        show_specific_communities = current_app.config.get("COMMUNITIES_SHOW_SPECIFIC_TYPES", False)
+        if show_specific_communities:
+            excluded_types_filter = dsl.Q(
+                {
+                    "bool": {
+                        "must_not": [
+                            {
+                                "term": {
+                                    "metadata.type.id": "person"
+                                }
+                            },
+                            {
+                                "term": {
+                                    "metadata.type.id": "organization"
+                                }
                             }
-                        },
-                        {
-                            "term": {
-                                "metadata.type.id": "organization"
-                            }
-                        }
-                    ]
-                }
-            })
-        communities_filter &= excluded_types_filter
+                        ]
+                    }
+                })
+            communities_filter &= excluded_types_filter
         if extra_filter is not None:
             communities_filter = communities_filter & extra_filter
 
@@ -388,24 +390,27 @@ class RecordCommunitiesService(Service, RecordIndexerMixin):
         communities_filter = self._get_excluded_communities_filter(
             record, identity, id_
         )
-        excluded_types_filter = dsl.Q(
-            {
-                "bool": {
-                    "must_not": [
-                        {
-                            "term": {
-                                "metadata.type.id": "person"
+
+        show_specific_communities = current_app.config.get("COMMUNITIES_SHOW_SPECIFIC_TYPES", False)
+        if show_specific_communities:
+            excluded_types_filter = dsl.Q(
+                {
+                    "bool": {
+                        "must_not": [
+                            {
+                                "term": {
+                                    "metadata.type.id": "person"
+                                }
+                            },
+                            {
+                                "term": {
+                                    "metadata.type.id": "organization"
+                                }
                             }
-                        },
-                        {
-                            "term": {
-                                "metadata.type.id": "organization"
-                            }
-                        }
-                    ]
-                }
-            })
-        communities_filter &= excluded_types_filter
+                        ]
+                    }
+                })
+            communities_filter &= excluded_types_filter
 
         if extra_filter is not None:
             communities_filter = communities_filter & extra_filter
