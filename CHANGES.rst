@@ -1,7 +1,7 @@
 
 ..
     Copyright (C) 2019-2024 CERN.
-    Copyright (C) 2019 Northwestern University.
+    Copyright (C) 2019-2024 Northwestern University.
 
 
     Invenio-RDM-Records is free software; you can redistribute it and/or
@@ -10,6 +10,221 @@
 
 Changes
 =======
+
+Version v12.1.0 (released 2024-08-30)
+
+- config: added links for thumbnails (#1799)
+
+Version v12.0.4 (released 2024-08-28)
+
+- stats: add missing "is_machine" field
+
+Version v12.0.3 (released 2024-08-27)
+
+- add permissions checks for community submission policy
+
+Version v12.0.2 (released 2024-08-26)
+
+- update file quota and size vars
+- add quota config for media_files bucket
+
+Version v12.0.1 (released 2024-08-22)
+
+- bump invenio-vocabularies
+
+Version v12.0.0 (released 2024-08-22)
+
+- mappings: add analyzers and filters to improve results when searching records
+
+Version v11.8.0 (released 2024-08-21)
+
+- pids: fix parent DOI link generation
+- schemaorg: add ``dateCreated`` field (closes #1777)
+- i18n: push translations
+- package: bump react-invenio-forms
+- subjects: remove suggest from dropdown if not required
+    * closes https://github.com/inveniosoftware/invenio-app-rdm/issues/2767
+
+Version v11.7.0 (released 2024-08-12)
+
+- resources: add vnd.inveniordm.v1+json http header
+- translation: update file paths for strings (UI)
+
+Version v11.6.0 (released 2024-08-07)
+
+- creatibutors: fix buttons order
+- permissions: change error handler for resolving pid permission denied
+- record inclusion: use system identity to accept inclusion request when can_include_directly
+- user_moderation: improve DB queries and use Celery tasks
+- fix: use index to distinguish type of record in results
+    * The problem with "is_published" is that drafts created from records will
+      not be recognised correctly.
+    * Using the index is a valid solution but it is not a nice implementation.
+- results: added support for drafts in the results list
+- fix(community): set branding
+    * The set branding didn't work at all. It didn't work for rebranding if
+      a default already exists and it didn't work if no branding exists at
+      all.
+    * The default property of the CommunitiesRelationManager needs a string.
+      It can't handle a dict.
+
+Version v11.5.0 (released 2024-07-22)
+
+- codemeta: added identifier to schema
+- signposting: generate 1 link context object for metadata
+- fix: abort on record deletion exception
+
+Version v11.4.0 (released 2024-07-15)
+
+- affiliations: update defaults to ror v2
+
+Version 11.3.1 (released 2024-07-12)
+
+- processors: fix tiles files iteration
+    * Creates a copy of the files list to be iterated since we might be
+      modifying the underlying dictionary while processing tiles.
+
+Version 11.3.0 (released 2024-07-12)
+
+* media-files: generate ptif and include in manifets
+* fix: pids required behavior
+    * The fix for the parent doi configuration
+      https://github.com/inveniosoftware/invenio-rdm-records/pull/1740 broke
+      the "required" parameter for the pid provider. Previously you could
+      have a pid provider that was active (shows up in the deposit form),
+      but not required (pid would only be minted if something was entered).
+      Because the check for "required" was removed, this stopped working.
+    * This correction enables the option of having external DOIs without
+      necessarily having to set one of them. This would not be possible with
+      the "is_enabled" configuration.
+* iiif: handle DecompressionBombError
+
+Version 11.2.0 (released 2024-07-05)
+
+- iiif: schema: only return images within size limit in manifest
+
+Version 11.1.0 (released 2024-07-04)
+
+- installation: upgrade invenio-drafts-resources
+
+Version 11.0.0 (released 2024-06-04)
+
+- installation: bump invenio-communities, invenio-vocabularies, invenio-drafts-resources and invenio-records-resources
+- installation: added invenio-jobs
+
+Version 10.7.1 (released 2024-05-31)
+
+- secret links: set csrf token for all requests with secret links,
+  i.e. fixes edit button CSRF error message on record landing page
+
+
+Version 10.7.0 (released 2024-05-28)
+
+- pids service: resolve owned_by for the emails
+- entity_resolver: match drafts while resolving
+- notifications: add user and guest notifications on request actions
+- pids: unify pid behaviour, disable/enable parent DOI on demand, based on
+  DATACITE_ENABLED configuration
+
+Version 10.6.0 (released 2024-05-22)
+
+- pids: prevent creating pids for restricted records
+- pids: restrict updating permission levels for records based on a grace period
+
+Version 10.5.0 (released 2024-05-21)
+
+- iiif: add PyVIPS support for PDF thumbnail rendering
+
+Version 10.4.3 (released 2024-05-17)
+
+- services: fix permission for file edit
+
+Version 10.4.2 (released 2024-05-08)
+
+- iiif: resolve relative tiles storage against instance path
+
+Version 10.4.1 (released 2024-05-07)
+
+- grants: add new endpoint to grant access to records by groups
+
+Version 10.4.0 (released 2024-05-07)
+
+- config: add default values for IIIF tiles generation
+- config: new variable for default IIIF manifest formats
+- iiif: add pyramidal TIFF tiles generation on record publish via files processor
+- iiif: harmonize configuration naming
+- services: updated file schema
+    - added "access" field to file schema
+    - updated metadata field to be nested with a new schema
+- services: fixed PDF image conversion bug
+    - PDF thumbnails should now work again
+- iiif: added fallback for iip server
+- licenses: fix some delimiters not been recognized.
+
+Version 10.3.2 (released 2024-04-30)
+
+- iiif: fix proxy path generation
+
+Version 10.3.1 (released 2024-04-25)
+
+- resources: make IIIF proxy configurable via import string
+
+Version 10.3.0 (released 2024-04-24)
+
+- services: added nested links for record files
+
+Version 10.2.0 (released 2024-04-23)
+
+- iiif: added proxy to image server
+
+Version 10.1.2 (released 2024-04-22)
+
+- review: fix draft indexing operations order
+    - Fixes a bug where when publishing directly to a community (e.g.
+      beacause the uploader is a community admin/owner/curator), the draft
+      would get deleted from the index and then get indexed again, thus
+      appearing in the users' dashboard both as a published record and
+      as a draft in review.
+
+Version 10.1.1 (released 2024-04-19)
+
+- pids: fix register/update serialization
+
+Version 10.1.0 (released 2024-04-15)
+
+- licenses: fix wrong characters encoding
+- facets: integrate combined_subjects / fix nested subject faceting
+- resources: fixed missing imports
+- dublincore: fix license URL lookup
+
+Version 10.0.0 (released 2024-04-11)
+
+- Fixes datacite, dcat, dublin core, marcxml and schema.org serializer performance (reduced from ~500 queries in an OAI-PMH page down to 5).
+- resources: fix performance of serializers
+    - Rely on index data for licenses, subjects, communities, affiliations, and licenses instead of querying.
+- datacite: fixed schema with unsafe access to parent
+- datacite: fixed custom license links.
+- serializer: add system updated date to DataCite
+- csl: improve DOI (alternative identifier), ISBN, and ISSN
+- csl: improve serialization performance
+    - Remove funding information from CSL as it makes database queries and it is not relevant in the CSL JSON for generating citations.
+- marcxml: removed service call for community slug
+- marcxml: add license in 650
+- marcxml: added references
+- marcxml: updated award title in get_funding
+- marcxml: added language
+- marcxml: moved funding from 856 to 536
+- marcxml: add contributor role
+- marcxml: remove read_many call to vocab service
+- records: add community.is_verified to mapping
+- licenses: use sniffer to determine csv format
+- licenses: bring urls up to date and use opensource and creativecommons as main urls with spdx as fallback
+- licenses: change delimiter to comma
+- assets: Add overridable tags (#1631)
+- Added Swedish translation for vocabularies
+- IIIF Presi: change viewingHint to individuals
+- links: fix ESLint map expects a return value from arrow function
+- vocab: add marc to roles.yaml
 
 Version 9.1.0 (released 2024-04-04)
 

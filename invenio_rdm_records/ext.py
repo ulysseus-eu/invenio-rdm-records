@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2019-2023 CERN.
+# Copyright (C) 2019-2024 CERN.
 # Copyright (C) 2019-2021 Northwestern University.
 # Copyright (C) 2022 Universität Hamburg.
 # Copyright (C) 2023-2024 Graz University of Technology.
@@ -10,6 +10,9 @@
 # it under the terms of the MIT License; see LICENSE file for more details.
 
 """DataCite-based data model for Invenio."""
+
+from warnings import warn
+
 from flask import Blueprint
 from flask_iiif import IIIF
 from flask_principal import identity_loaded
@@ -30,6 +33,7 @@ from .resources import (
     RDMOrganizationRecordsResource,
     RDMOrganizationRecordsResourceConfig,
     RDMDraftFilesResourceConfig,
+    RDMGrantGroupAccessResourceConfig,
     RDMGrantsAccessResource,
     RDMGrantUserAccessResourceConfig,
     RDMParentGrantsResource,
@@ -125,12 +129,27 @@ class InvenioRDMRecords(object):
                 k in supported_configurations
                 or k.startswith("RDM_")
                 or k.startswith("DATACITE_")
+                # TODO: This can likely be moved to a separate module
+                or k.startswith("IIIF_TILES_")
             ):
                 app.config.setdefault(k, getattr(config, k))
 
         # set default communities namespaces to the global RDM_NAMESPACES
         if not app.config.get("COMMUNITIES_NAMESPACES"):
             app.config["COMMUNITIES_NAMESPACES"] = app.config["RDM_NAMESPACES"]
+
+        if not app.config.get("RDM_FILES_DEFAULT_QUOTA_SIZE"):
+            warn(
+                "The configuration value 'RDM_FILES_DEFAULT_QUOTA_SIZE' is not set. In future, please set it "
+                "explicitly to define your quota size, or be aware that the default value used i.e. FILES_REST_DEFAULT_QUOTA_SIZE will be 10 * (10**9) (10 GB).",
+                DeprecationWarning,
+            )
+        if not app.config.get("RDM_FILES_DEFAULT_MAX_FILE_SIZE"):
+            warn(
+                "The configuration value 'RDM_FILES_DEFAULT_MAX_FILE_SIZE' is not set. In future, please set it "
+                "explicitly to define your max file size, or be aware that the default value used i.e. FILES_REST_DEFAULT_MAX_FILE_SIZE will be 10 * (10**9) (10 GB).",
+                DeprecationWarning,
+            )
 
         self.fix_datacite_configs(app)
 
@@ -247,6 +266,11 @@ class InvenioRDMRecords(object):
         self.grant_user_access_resource = RDMGrantsAccessResource(
             service=self.records_service,
             config=RDMGrantUserAccessResourceConfig.build(app),
+        )
+
+        self.grant_group_access_resource = RDMGrantsAccessResource(
+            service=self.records_service,
+            config=RDMGrantGroupAccessResourceConfig.build(app),
         )
 
         # Record's communities

@@ -9,6 +9,7 @@
 # it under the terms of the MIT License; see LICENSE file for more details.
 
 """Resources configuration."""
+
 from copy import deepcopy
 
 import marshmallow as ma
@@ -38,6 +39,7 @@ from ..services.errors import (
     GrantExistsError,
     InvalidAccessRestrictions,
     RecordDeletedException,
+    RecordSubmissionClosedCommunityError,
     ReviewExistsError,
     ReviewNotFoundError,
     ReviewStateError,
@@ -247,6 +249,12 @@ class RDMRecordResourceConfig(RecordResourceConfig, ConfiguratorMixin):
                 )
             )
         ),
+        RecordSubmissionClosedCommunityError: create_error_handler(
+            lambda e: HTTPJSONException(
+                code=403,
+                description=e.description,
+            )
+        ),
     }
 
 
@@ -287,6 +295,13 @@ class RDMDraftFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
     blueprint_name = "draft_files"
     url_prefix = "/records/<pid_value>/draft"
 
+    response_handlers = {
+        "application/vnd.inveniordm.v1+json": FileResourceConfig.response_handlers[
+            "application/json"
+        ],
+        **FileResourceConfig.response_handlers,
+    }
+
 
 class RDMRecordMediaFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
     """Bibliographic record files resource config."""
@@ -318,6 +333,13 @@ class RDMRecordMediaFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
         ),
     }
 
+    response_handlers = {
+        "application/vnd.inveniordm.v1+json": FileResourceConfig.response_handlers[
+            "application/json"
+        ],
+        **FileResourceConfig.response_handlers,
+    }
+
 
 #
 # Draft files
@@ -337,6 +359,13 @@ class RDMDraftMediaFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
         "list-archive": "/media-files-archive",
     }
 
+    response_handlers = {
+        "application/vnd.inveniordm.v1+json": FileResourceConfig.response_handlers[
+            "application/json"
+        ],
+        **FileResourceConfig.response_handlers,
+    }
+
 
 #
 # Parent Record Links
@@ -346,7 +375,7 @@ record_links_error_handlers = {
     LookupError: create_error_handler(
         HTTPJSONException(
             code=404,
-            description="No secret link found with the given ID.",
+            description=_("No secret link found with the given ID."),
         )
     ),
 }
@@ -354,7 +383,7 @@ record_links_error_handlers = {
 grants_error_handlers = {
     **deepcopy(RecordResourceConfig.error_handlers),
     LookupError: create_error_handler(
-        HTTPJSONException(code=404, description="No grant found with the given ID.")
+        HTTPJSONException(code=404, description=_("No grant found with the given ID."))
     ),
     GrantExistsError: create_error_handler(
         lambda e: HTTPJSONException(
@@ -367,7 +396,14 @@ grants_error_handlers = {
 user_access_error_handlers = {
     **deepcopy(RecordResourceConfig.error_handlers),
     LookupError: create_error_handler(
-        HTTPJSONException(code=404, description="No grant found by given user id.")
+        HTTPJSONException(code=404, description=_("No grant found by given user id."))
+    ),
+}
+
+group_access_error_handlers = {
+    **deepcopy(RecordResourceConfig.error_handlers),
+    LookupError: create_error_handler(
+        HTTPJSONException(code=404, description=_("No grant found by given group id."))
     ),
 }
 
@@ -395,7 +431,10 @@ class RDMParentRecordLinksResourceConfig(RecordResourceConfig, ConfiguratorMixin
     }
 
     response_handlers = {
-        "application/json": ResponseHandler(JSONSerializer(), headers=etag_headers)
+        "application/vnd.inveniordm.v1+json": RecordResourceConfig.response_handlers[
+            "application/json"
+        ],
+        **RecordResourceConfig.response_handlers,
     }
 
     error_handlers = record_links_error_handlers
@@ -425,7 +464,10 @@ class RDMParentGrantsResourceConfig(RecordResourceConfig, ConfiguratorMixin):
     request_extra_args = {"expand": ma.fields.Bool()}
 
     response_handlers = {
-        "application/json": ResponseHandler(JSONSerializer(), headers=etag_headers)
+        "application/vnd.inveniordm.v1+json": RecordResourceConfig.response_handlers[
+            "application/json"
+        ],
+        **RecordResourceConfig.response_handlers,
     }
 
     error_handlers = grants_error_handlers
@@ -460,6 +502,37 @@ class RDMGrantUserAccessResourceConfig(RecordResourceConfig, ConfiguratorMixin):
     }
 
     error_handlers = user_access_error_handlers
+
+
+class RDMGrantGroupAccessResourceConfig(RecordResourceConfig, ConfiguratorMixin):
+    """Record grants group access resource configuration."""
+
+    blueprint_name = "record_group_access"
+
+    url_prefix = "/records/<pid_value>/access"
+
+    routes = {
+        "item": "/groups/<subject_id>",
+        "list": "/groups",
+    }
+
+    links_config = {}
+
+    request_view_args = {
+        "pid_value": ma.fields.Str(),
+        "subject_id": ma.fields.Str(),  # group id
+    }
+
+    grant_subject_type = "role"
+
+    response_handlers = {
+        "application/vnd.inveniordm.v1+json": RecordResourceConfig.response_handlers[
+            "application/json"
+        ],
+        **deepcopy(RecordResourceConfig.response_handlers),
+    }
+
+    error_handlers = group_access_error_handlers
 
 
 #
@@ -543,53 +616,9 @@ class RDMRecordRequestsResourceConfig(ResourceConfig, ConfiguratorMixin):
         "expand": ma.fields.Boolean(),
     }
 
-
-#
-# IIIF
-#
-class IIIFResourceConfig(ResourceConfig, ConfiguratorMixin):
-    """IIIF resource configuration."""
-
-    blueprint_name = "iiif"
-
-    url_prefix = "/iiif"
-
-    routes = {
-        "manifest": "/<path:uuid>/manifest",
-        "sequence": "/<path:uuid>/sequence/default",
-        "canvas": "/<path:uuid>/canvas/<path:file_name>",
-        "image_base": "/<path:uuid>",
-        "image_info": "/<path:uuid>/info.json",
-        "image_api": "/<path:uuid>/<region>/<size>/<rotation>/<quality>.<image_format>",
-    }
-
-    request_view_args = {
-        "uuid": ma.fields.Str(),
-        "file_name": ma.fields.Str(),
-        "region": ma.fields.Str(),
-        "size": ma.fields.Str(),
-        "rotation": ma.fields.Str(),
-        "quality": ma.fields.Str(),
-        "image_format": ma.fields.Str(),
-    }
-
-    request_read_args = {
-        "dl": ma.fields.Str(),
-    }
-
-    request_headers = {
-        "If-Modified-Since": ma.fields.DateTime(),
-    }
-
-    response_handler = {"application/json": ResponseHandler(JSONSerializer())}
-
-    supported_formats = {
-        "gif": "image/gif",
-        "jp2": "image/jp2",
-        "jpeg": "image/jpeg",
-        "jpg": "image/jpeg",
-        "pdf": "application/pdf",
-        "png": "image/png",
-        "tif": "image/tiff",
-        "tiff": "image/tiff",
+    response_handlers = {
+        "application/vnd.inveniordm.v1+json": ResourceConfig.response_handlers[
+            "application/json"
+        ],
+        **ResourceConfig.response_handlers,
     }

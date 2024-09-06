@@ -8,6 +8,7 @@
 # it under the terms of the MIT License; see LICENSE file for more details.
 
 """Schemaorg based Schema for Invenio RDM Records."""
+
 from copy import deepcopy
 
 import pycountry
@@ -16,9 +17,7 @@ from commonmeta import dict_to_spdx, doi_as_url, parse_attributes, unwrap, wrap
 from edtf.parser.grammar import ParseException
 from flask_resources.serializers import BaseSerializerSchema
 from idutils import to_url
-from invenio_access.permissions import system_identity
-from invenio_records_resources.proxies import current_service_registry
-from marshmallow import Schema, ValidationError, fields, missing, post_dump, pre_dump
+from marshmallow import Schema, ValidationError, fields, missing
 from marshmallow_utils.fields import SanitizedHTML, SanitizedUnicode
 from pydash import py_
 
@@ -128,20 +127,11 @@ class PersonOrOrgSchema(Schema):
 
             # Affiliation comes from a controlled vocabulary
             if id_:
-                affiliations_service = current_service_registry.get("affiliations")
-                affiliation_vc = affiliations_service.read(
-                    system_identity, id_
-                ).to_dict()
-
-                # Prioritize the vocabulary name instead of the custom one
-                if affiliation_vc.get("name"):
-                    serialized_affiliation.update({"name": affiliation_vc["name"]})
-
                 # Retrieve the first identifier
                 identifier = next(
                     (
                         idf
-                        for idf in affiliation_vc.get("identifiers", [])
+                        for idf in affiliation.get("identifiers", [])
                         if (idf.get("identifier") and idf.get("scheme"))
                     ),
                     None,
@@ -183,8 +173,9 @@ class SchemaorgSchema(BaseSerializerSchema, CommonFieldsMixin):
     )
     publisher = fields.Method("get_publisher")
     keywords = fields.Method("get_keywords")
-    datePublished = fields.Method("get_publication_date")
+    dateCreated = fields.Method("get_creation_date")
     dateModified = fields.Method("get_modification_date")
+    datePublished = fields.Method("get_publication_date")
     temporal = fields.Method("get_dates")
     inLanguage = fields.Method("get_language")
     contentSize = fields.Method("get_size")
@@ -251,10 +242,13 @@ class SchemaorgSchema(BaseSerializerSchema, CommonFieldsMixin):
             parsed_date = parsed_date.lower
         return str(parsed_date)
 
+    def get_creation_date(self, obj):
+        """Get creation date."""
+        return obj.get("created") or missing
+
     def get_modification_date(self, obj):
         """Get modification date."""
-        last_updated = obj.get("updated")
-        return last_updated or missing
+        return obj.get("updated") or missing
 
     def get_language(self, obj):
         """Get language. Schemaorg expects either a string or language dict.

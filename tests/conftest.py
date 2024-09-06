@@ -13,6 +13,7 @@
 See https://pytest-invenio.readthedocs.io/ for documentation on which test
 fixtures are available.
 """
+
 from invenio_rdm_records.services.permissions import RDMRequestsPermissionPolicy
 
 # Monkey patch Werkzeug 2.1
@@ -35,7 +36,7 @@ except AttributeError:
 
 from collections import namedtuple
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from unittest import mock
 
@@ -247,7 +248,7 @@ def app_config(app_config, mock_datacite_client):
         },
     }
 
-    app_config["INDEXER_DEFAULT_INDEX"] = "rdmrecords-records-record-v6.0.0"
+    app_config["INDEXER_DEFAULT_INDEX"] = "rdmrecords-records-record-v7.0.0"
     # Variable not used. We set it to silent warnings
     app_config["JSONSCHEMAS_HOST"] = "not-used"
 
@@ -368,6 +369,8 @@ def app_config(app_config, mock_datacite_client):
         "record_detail": "/records/<pid_value>",
         "record_file_download": "/records/<pid_value>/files/<path:filename>",
     }
+
+    app_config["USERS_RESOURCES_GROUPS_ENABLED"] = True
 
     return app_config
 
@@ -548,7 +551,9 @@ def full_record(users):
             ],
             "references": [
                 {
-                    "reference": "0000 0001 1456 7559",
+                    "reference": "Nielsen et al,..",
+                    "identifier": "0000 0001 1456 7559",
+                    "scheme": "isni",
                 }
             ],
         },
@@ -982,6 +987,15 @@ def closed_review_minimal_community(minimal_community):
     community = deepcopy(minimal_community)
     community["slug"] = "closed-review-community"
     community["access"]["review_policy"] = "closed"
+    return community
+
+
+@pytest.fixture()
+def closed_submission_minimal_community(minimal_community):
+    """Data for a minimal community that restricts record submission."""
+    community = deepcopy(minimal_community)
+    community["slug"] = "closed-submission-community"
+    community["access"]["record_submission_policy"] = "closed"
     return community
 
 
@@ -1700,6 +1714,33 @@ def admin_role_need(db):
 
 
 @pytest.fixture()
+def embargoed_files_record(running_app, minimal_record, superuser_identity):
+    """Embargoed files record."""
+    service = current_rdm_records_service
+    today = arrow.utcnow().date().isoformat()
+
+    # Add embargo to record
+    with mock.patch("arrow.utcnow") as mock_arrow:
+        minimal_record["access"]["files"] = "restricted"
+        minimal_record["access"]["status"] = "embargoed"
+        minimal_record["access"]["embargo"] = dict(
+            active=True, until=today, reason=None
+        )
+
+        # We need to set the current date in the past to pass the validations
+        mock_arrow.return_value = arrow.get(datetime(1954, 9, 29), tz.gettz("UTC"))
+        draft = service.create(superuser_identity, minimal_record)
+        record = service.publish(id_=draft.id, identity=superuser_identity)
+
+        RDMRecord.index.refresh()
+
+        # Recover current date
+        mock_arrow.return_value = arrow.get(datetime.utcnow())
+
+    return record
+
+
+@pytest.fixture()
 def embargoed_record(running_app, minimal_record, superuser_identity):
     """Embargoed record."""
     service = current_rdm_records_service
@@ -1707,7 +1748,7 @@ def embargoed_record(running_app, minimal_record, superuser_identity):
 
     # Add embargo to record
     with mock.patch("arrow.utcnow") as mock_arrow:
-        minimal_record["access"]["files"] = "restricted"
+        minimal_record["access"]["record"] = "restricted"
         minimal_record["access"]["status"] = "embargoed"
         minimal_record["access"]["embargo"] = dict(
             active=True, until=today, reason=None
@@ -1940,6 +1981,19 @@ def closed_review_community(
     """Create community with close review policy i.e allow direct publishes."""
     return _community_get_or_create(
         closed_review_minimal_community, community_owner.identity
+    )
+
+
+@pytest.fixture()
+def closed_submission_community(
+    running_app,
+    community_type_record,
+    community_owner,
+    closed_submission_minimal_community,
+):
+    """Create community with close submission policy."""
+    return _community_get_or_create(
+        closed_submission_minimal_community, community_owner.identity
     )
 
 

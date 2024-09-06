@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2023 CERN.
+# Copyright (C) 2023-2024 CERN.
 #
 # Invenio-RDM-Records is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
@@ -38,7 +38,6 @@ def enhanced_full_record(enhanced_full_record, parent_record):
     return enhanced_full_record
 
 
-# TODO: Use this representation in all serializer tests
 @pytest.fixture
 def full_record_to_dict():
     """The to_dict() representation of a full record.
@@ -95,6 +94,7 @@ def full_record_to_dict():
             "access_links": "https://127.0.0.1:5000/api/records/12345-abcde/access/links",  # noqa
             "access_request": "https://127.0.0.1:5000/api/records/12345-abcde/access/request",  # noqa
             "access_users": "https://127.0.0.1:5000/api/records/12345-abcde/access/users",  # noqa
+            "access_groups": "https://127.0.0.1:5000/api/records/12345-abcde/access/groups",  # noqa
             "archive": "https://127.0.0.1:5000/api/records/12345-abcde/files-archive",
             "archive_media": "https://127.0.0.1:5000/api/records/12345-abcde/media-files-archive",  # noqa
             "communities": "https://127.0.0.1:5000/api/records/12345-abcde/communities",
@@ -326,7 +326,9 @@ def full_record_to_dict():
             "publisher": "InvenioRDM",
             "references": [
                 {
-                    "reference": "0000 0001 1456 7559",
+                    "reference": "Nielsen et al,..",
+                    "identifier": "0000 0001 1456 7559",
+                    "scheme": "isni",
                 },
             ],
             "related_identifiers": [
@@ -494,6 +496,7 @@ def minimal_record_to_dict():
             "access_links": "https://127.0.0.1:5000/api/records/67890-fghij/access/links",  # noqa
             "access_request": "https://127.0.0.1:5000/api/records/67890-fghij/access/request",  # noqa
             "access_users": "https://127.0.0.1:5000/api/records/67890-fghij/access/users",  # noqa
+            "access_groups": "https://127.0.0.1:5000/api/records/67890-fghij/access/groups",  # noqa
             "archive": "https://127.0.0.1:5000/api/records/67890-fghij/files-archive",
             "archive_media": "https://127.0.0.1:5000/api/records/67890-fghij/media-files-archive",  # noqa
             "communities": "https://127.0.0.1:5000/api/records/67890-fghij/communities",

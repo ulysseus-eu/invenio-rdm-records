@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2020-2023 CERN.
+# Copyright (C) 2020-2024 CERN.
 # Copyright (C) 2021-2023 TU Wien.
 #
 # Invenio-RDM-Records is free software; you can redistribute it and/or modify
@@ -8,7 +8,7 @@
 
 """RDM Record and Draft API."""
 
-from flask import g
+from flask import current_app, g
 from invenio_communities.records.records.systemfields import CommunitiesField
 from invenio_db import db
 from invenio_drafts_resources.records import Draft, Record
@@ -47,6 +47,7 @@ from invenio_rdm_records.records.systemfields.deletion_status import (
 
 from . import models
 from .dumpers import (
+    CombinedSubjectsDumperExt,
     EDTFDumperExt,
     EDTFListDumperExt,
     GrantTokensDumperExt,
@@ -118,6 +119,7 @@ class CommonFieldsMixin:
             EDTFDumperExt("metadata.publication_date"),
             EDTFListDumperExt("metadata.dates", "date"),
             RelationDumperExt("relations"),
+            CombinedSubjectsDumperExt(),
             CustomFieldsDumperExt(fields_var="RDM_CUSTOM_FIELDS"),
             StatisticsDumperExt("stats"),
         ]
@@ -127,21 +129,21 @@ class CommonFieldsMixin:
         creator_affiliations=PIDNestedListRelation(
             "metadata.creators",
             relation_field="affiliations",
-            keys=["name"],
+            keys=["name", "identifiers"],
             pid_field=Affiliation.pid,
             cache_key="affiliations",
         ),
         contributor_affiliations=PIDNestedListRelation(
             "metadata.contributors",
             relation_field="affiliations",
-            keys=["name"],
+            keys=["name", "identifiers"],
             pid_field=Affiliation.pid,
             cache_key="affiliations",
         ),
         funding_funder=PIDListRelation(
             "metadata.funding",
             relation_field="funder",
-            keys=["name"],
+            keys=["name", "identifiers"],
             pid_field=Funder.pid,
             cache_key="funders",
         ),
@@ -284,8 +286,11 @@ class RDMMediaFileDraft(FileRecord):
     model_cls = models.RDMMediaFileDraftMetadata
     record_cls = None  # defined below
 
+    # Stores record files processor information
+    processor = DictField(clear_none=True, create_if_missing=True)
 
-def get_quota(record=None):
+
+def get_files_quota(record=None):
     """Called by the file manager in create_bucket() during record.post_create.
 
     The quota is checked against the following order:
@@ -329,9 +334,32 @@ def get_quota(record=None):
                 quota_size=user_quota.quota_size,
                 max_file_size=user_quota.max_file_size,
             )
-    # return empty dict as the default values are handled by
-    # FILES_REST_DEFAULT_QUOTA_SIZE , FILES_REST_DEFAULT_MAX_FILE_SIZE
-    return {}
+
+    # the config variables if not set are mapped to FILES_REST_DEFAULT_QUOTA_SIZE,
+    # FILES_REST_DEFAULT_MAX_FILE_SIZE respectively
+    return dict(
+        quota_size=current_app.config.get("RDM_FILES_DEFAULT_QUOTA_SIZE")
+        or current_app.config.get("FILES_REST_DEFAULT_QUOTA_SIZE"),
+        max_file_size=current_app.config.get("RDM_FILES_DEFAULT_MAX_FILE_SIZE")
+        or current_app.config.get("FILES_REST_DEFAULT_MAX_FILE_SIZE"),
+    )
+
+
+# Alias to get the quota of files for backward compatibility
+get_quota = get_files_quota
+
+
+def get_media_files_quota(record=None):
+    """Called by the file manager in create_bucket() during record.post_create.
+
+    The quota is configured using config variables.
+        :returns: dict i.e {quota_size, max_file_size}: dict is passed to the
+        Bucket.create(...) method.
+    """
+    return dict(
+        quota_size=current_app.config.get("RDM_MEDIA_FILES_DEFAULT_QUOTA_SIZE"),
+        max_file_size=current_app.config.get("RDM_MEDIA_FILES_DEFAULT_MAX_FILE_SIZE"),
+    )
 
 
 class RDMDraft(CommonFieldsMixin, Draft):
@@ -347,13 +375,14 @@ class RDMDraft(CommonFieldsMixin, Draft):
         file_cls=RDMFileDraft,
         # Don't delete, we'll manage in the service
         delete=False,
-        bucket_args=get_quota,
+        bucket_args=get_files_quota,
     )
 
     media_files = FilesField(
         key=MediaFilesAttrConfig["_files_attr_key"],
         bucket_id_attr=MediaFilesAttrConfig["_files_bucket_id_attr_key"],
         bucket_attr=MediaFilesAttrConfig["_files_bucket_attr_key"],
+        bucket_args=get_media_files_quota,
         store=False,
         dump=False,
         file_cls=RDMMediaFileDraft,
@@ -376,6 +405,7 @@ class RDMDraftMediaFiles(RDMDraft):
         key=MediaFilesAttrConfig["_files_attr_key"],
         bucket_id_attr=MediaFilesAttrConfig["_files_bucket_id_attr_key"],
         bucket_attr=MediaFilesAttrConfig["_files_bucket_attr_key"],
+        bucket_args=get_media_files_quota,
         store=False,
         dump=False,
         file_cls=RDMMediaFileDraft,
@@ -402,6 +432,9 @@ class RDMMediaFileRecord(FileRecord):
     model_cls = models.RDMMediaFileRecordMetadata
     record_cls = None  # defined below
 
+    # Stores record files processor information
+    processor = DictField(clear_none=True, create_if_missing=True)
+
 
 class RDMRecord(CommonFieldsMixin, Record):
     """RDM Record API."""
@@ -409,7 +442,7 @@ class RDMRecord(CommonFieldsMixin, Record):
     model_cls = models.RDMRecordMetadata
 
     index = IndexField(
-        "rdmrecords-records-record-v6.0.0", search_alias="rdmrecords-records"
+        "rdmrecords-records-record-v7.0.0", search_alias="rdmrecords-records"
     )
 
     files = FilesField(
@@ -503,6 +536,7 @@ class RDMRecordMediaFiles(RDMRecord):
         key=MediaFilesAttrConfig["_files_attr_key"],
         bucket_id_attr=MediaFilesAttrConfig["_files_bucket_id_attr_key"],
         bucket_attr=MediaFilesAttrConfig["_files_bucket_attr_key"],
+        bucket_args=get_media_files_quota,
         store=False,
         dump=False,
         file_cls=RDMMediaFileRecord,
