@@ -15,13 +15,45 @@ from copy import copy
 from flask import current_app
 from invenio_drafts_resources.services.records.components import ServiceComponent
 from invenio_drafts_resources.services.records.uow import ParentRecordCommitOp
+from invenio_i18n import lazy_gettext as _
 from invenio_records_resources.services.uow import TaskOp
 
+from ..errors import ValidationErrorWithMessageAsList
 from ..pids.tasks import register_or_update_pid
+
+
+def _get_optional_doi_transitions(record):
+    """Reusable method to validate optional DOI."""
+    RDM_OPTIONAL_DOI_TRANSITIONS = current_app.config["RDM_OPTIONAL_DOI_TRANSITIONS"]
+    if record:
+        record_pids = record.get("pids", {})
+        record_provider = record_pids.get("doi", {}).get("provider", "not_needed")
+        return RDM_OPTIONAL_DOI_TRANSITIONS.get(record_provider, {})
+    return {}
 
 
 class PIDsComponent(ServiceComponent):
     """Service component for PIDs."""
+
+    def _validate_optional_doi(self, record, previous_published_record, errors=None):
+        """.Validate optional DOI."""
+        sitename = current_app.config.get("THEME_SITENAME", "this repository")
+
+        doi_transitions = _get_optional_doi_transitions(previous_published_record)
+        if doi_transitions:
+            doi_pid = [pid for pid in record.pids.values() if "doi" in record.pids]
+            new_provider = "not_needed" if not doi_pid else doi_pid[0]["provider"]
+            if new_provider not in doi_transitions.get("allowed_providers", []):
+                error_message = {
+                    "field": "pids.doi",
+                    "messages": [
+                        doi_transitions.get("message").format(sitename=sitename)
+                    ],
+                }
+                if errors is not None:
+                    errors.append(error_message)
+                else:
+                    raise ValidationErrorWithMessageAsList(message=[error_message])
 
     def create(self, identity, data=None, record=None, errors=None):
         """This method is called on draft creation.
@@ -40,6 +72,20 @@ class PIDsComponent(ServiceComponent):
         pids_data = record.pids or {}  # current pids state
         if "pids" in data:  # there is new input data for PIDs
             pids_data = data["pids"]
+
+        required_schemes = set(self.service.config.pids_required)
+
+        # if DOI is not required in an instance check validate allowed providers
+        # for each record version
+        doi_required = "doi" in required_schemes
+        can_manage_dois = self.service.check_permission(identity, "pid_manage")
+        if not doi_required and not can_manage_dois:
+            previous_published_record = (
+                self.service.record_cls.get_latest_published_by_parent(record.parent)
+            )
+            self._validate_optional_doi(
+                record, previous_published_record, errors=errors
+            )
 
         self.service.pids.pid_manager.validate(pids_data, record, errors)
         record.pids = pids_data
@@ -75,7 +121,20 @@ class PIDsComponent(ServiceComponent):
         record_schemes = set(record_pids.keys())
         required_schemes = set(self.service.config.pids_required)
 
-        # Validate the draft PIDs
+        # if DOI is not required in an instance check validate allowed providers
+        # for each record version
+        doi_required = "doi" in required_schemes
+        can_manage_dois = self.service.check_permission(identity, "pid_manage")
+        if not doi_required and not can_manage_dois:
+            # if a doi was ever minted for the parent record then we always require one
+            # for any version of the record that will be published
+            if draft.parent.get("pids", {}).get("doi"):
+                required_schemes.add("doi")
+            previous_published_record = (
+                self.service.record_cls.get_previous_published_by_parent(record.parent)
+            )
+            self._validate_optional_doi(draft, previous_published_record)
+
         self.service.pids.pid_manager.validate(draft_pids, draft, raise_errors=True)
 
         # Detect which PIDs on a published record that has been changed.
@@ -129,12 +188,7 @@ class PIDsComponent(ServiceComponent):
 
     def new_version(self, identity, draft=None, record=None):
         """A new draft should not have any pids from the previous record."""
-        # This makes the draft use the same identifier as the previous
-        # version
-        if record.pids.get("doi", {}).get("provider") == "external":
-            draft.pids = {"doi": {"provider": "external", "identifier": ""}}
-        else:
-            draft.pids = {}
+        draft.pids = {}
 
     def edit(self, identity, draft=None, record=None):
         """Add current pids from the record to the draft.
@@ -172,6 +226,14 @@ class ParentPIDsComponent(ServiceComponent):
         current_schemes = set(current_pids.keys())
         required_schemes = set(self.service.config.parent_pids_required)
 
+        # Check if a doi was added in the draft and create a parent DOI independently if
+        # doi is required.
+        if draft.get("pids", {}).get("doi"):
+            required_schemes.add("doi")
+
+        # Note: we don't have explicitly to check for minting a parent DOI only for the
+        # managed provider because we pass a `condition_func` below that it omits the
+        # minting if the pid selected is external
         conditional_schemes = self.service.config.parent_pids_conditional
         for scheme in set(required_schemes):
             condition_func = conditional_schemes.get(scheme)

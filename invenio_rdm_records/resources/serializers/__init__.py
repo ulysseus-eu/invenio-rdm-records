@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2020, 2021 CERN.
+# Copyright (C) 2020-2025 CERN.
 # Copyright (C) 2020 Northwestern University.
 # Copyright (C) 2021 Graz University of Technology.
 #
@@ -22,6 +22,7 @@ from .codemeta import CodemetaSerializer
 from .csl import CSLJSONSerializer, StringCitationSerializer
 from .csv import CSVRecordSerializer
 from .datacite import DataCite43JSONSerializer, DataCite43XMLSerializer
+from .datapackage import DataPackageSerializer
 from .dcat import DCATSerializer
 from .dublincore import DublinCoreJSONSerializer, DublinCoreXMLSerializer
 from .geojson import GeoJSONSerializer
@@ -33,7 +34,10 @@ from .iiif import (
 )
 from .marcxml import MARCXMLSerializer
 from .schemaorg import SchemaorgJSONLDSerializer
-from .signposting import FAIRSignpostingProfileLvl2Serializer
+from .signposting import (
+    FAIRSignpostingProfileLvl1Serializer,
+    FAIRSignpostingProfileLvl2Serializer,
+)
 from .ui import UIJSONSerializer
 
 __all__ = (
@@ -43,8 +47,10 @@ __all__ = (
     "CSVRecordSerializer",
     "DataCite43JSONSerializer",
     "DataCite43XMLSerializer",
+    "DataPackageSerializer",
     "DublinCoreJSONSerializer",
     "DublinCoreXMLSerializer",
+    "FAIRSignpostingProfileLvl1Serializer",
     "FAIRSignpostingProfileLvl2Serializer",
     "GeoJSONSerializer",
     "IIIFCanvasV2JSONSerializer",

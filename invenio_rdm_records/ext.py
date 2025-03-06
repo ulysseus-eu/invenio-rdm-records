@@ -19,6 +19,10 @@ from flask_principal import identity_loaded
 from invenio_records_resources.resources.files import FileResource
 
 from . import config
+from .collections.resources.config import CollectionsResourceConfig
+from .collections.resources.resource import CollectionsResource
+from .collections.services.config import CollectionServiceConfig
+from .collections.services.service import CollectionsService
 from .oaiserver.resources.config import OAIPMHServerResourceConfig
 from .oaiserver.resources.resources import OAIPMHServerResource
 from .oaiserver.services.config import OAIPMHServerServiceConfig
@@ -169,6 +173,7 @@ class InvenioRDMRecords(object):
             person_records = RDMPersonRecordsConfig.build(app)
             organization_records = RDMOrganizationRecordsConfig.build(app)
             record_requests = RDMRecordRequestsConfig.build(app)
+            collections = CollectionServiceConfig.build(app)
 
         return ServiceConfigs
 
@@ -220,6 +225,10 @@ class InvenioRDMRecords(object):
 
         self.oaipmh_server_service = OAIPMHServerService(
             config=service_configs.oaipmh_server,
+        )
+
+        self.collections_service = CollectionsService(
+            config=service_configs.collections
         )
 
     def init_resource(self, app):
@@ -298,6 +307,12 @@ class InvenioRDMRecords(object):
         self.organization_records_resource = RDMOrganizationRecordsResource(
             service=self.organization_records_service,
             config=RDMOrganizationRecordsResourceConfig.build(app),
+        )
+
+        # Collections
+        self.collections_resource = CollectionsResource(
+            service=self.collections_service,
+            config=CollectionsResourceConfig,
         )
 
         # OAI-PMH

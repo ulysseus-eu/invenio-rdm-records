@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2019-2024 CERN.
+# Copyright (C) 2019-2025 CERN.
 # Copyright (C) 2019-2022 Northwestern University.
 # Copyright (C) 2021 TU Wien.
 # Copyright (C) 2022-2023 Graz University of Technology.
@@ -36,14 +36,13 @@ except AttributeError:
 
 from collections import namedtuple
 from copy import deepcopy
-from datetime import datetime, timedelta
+from datetime import datetime
 from io import BytesIO
 from unittest import mock
 
 import arrow
 import pytest
 from dateutil import tz
-from flask import g
 from flask_principal import Identity, Need, RoleNeed, UserNeed
 from flask_security import login_user
 from flask_security.utils import hash_password
@@ -70,7 +69,6 @@ from invenio_records_resources.services.custom_fields import TextCF
 from invenio_requests.notifications.builders import (
     CommentRequestEventCreateNotificationBuilder,
 )
-from invenio_requests.proxies import current_user_moderation_service as mod_service
 from invenio_users_resources.permissions import user_management_action
 from invenio_users_resources.proxies import current_users_service
 from invenio_users_resources.records.api import UserAggregate
@@ -86,6 +84,7 @@ from invenio_vocabularies.contrib.subjects.api import Subject
 from invenio_vocabularies.proxies import current_service as vocabulary_service
 from invenio_vocabularies.records.api import Vocabulary
 from marshmallow import fields
+from werkzeug.local import LocalProxy
 
 from invenio_rdm_records import config
 from invenio_rdm_records.notifications.builders import (
@@ -247,8 +246,12 @@ def app_config(app_config, mock_datacite_client):
             "namespace": "http://schema.datacite.org/oai/oai-1.1/",
         },
     }
+    records_index = LocalProxy(
+        lambda: current_rdm_records_service.record_cls.index._name
+    )
+    app_config["OAISERVER_RECORD_INDEX"] = records_index
+    app_config["INDEXER_DEFAULT_INDEX"] = records_index
 
-    app_config["INDEXER_DEFAULT_INDEX"] = "rdmrecords-records-record-v7.0.0"
     # Variable not used. We set it to silent warnings
     app_config["JSONSCHEMAS_HOST"] = "not-used"
 
@@ -306,6 +309,9 @@ def app_config(app_config, mock_datacite_client):
     }
 
     app_config["FILES_REST_DEFAULT_STORAGE_CLASS"] = "L"
+
+    app_config["RDM_FILES_DEFAULT_QUOTA_SIZE"] = 10**6
+    app_config["RDM_FILES_DEFAULT_MAX_FILE_SIZE"] = 10**6
 
     # Communities
     app_config["COMMUNITIES_SERVICE_COMPONENTS"] = CommunityServiceComponents
@@ -919,6 +925,19 @@ def minimal_record():
 
 
 @pytest.fixture()
+def empty_record():
+    """Almost empty record data as dict coming from the external world."""
+    return {
+        "pids": {},
+        "access": {},
+        "files": {
+            "enabled": False,  # Most tests don't care about files
+        },
+        "metadata": {},
+    }
+
+
+@pytest.fixture()
 def minimal_restricted_record(minimal_record):
     """Data for restricted record."""
     record = deepcopy(minimal_record)
@@ -1425,9 +1444,9 @@ def relation_type(app):
 
 
 @pytest.fixture(scope="module")
-def relation_type_v(app, relation_type):
+def relation_types_v(app, relation_type):
     """Relation type vocabulary record."""
-    vocab = vocabulary_service.create(
+    vocab1 = vocabulary_service.create(
         system_identity,
         {
             "id": "iscitedby",
@@ -1437,9 +1456,19 @@ def relation_type_v(app, relation_type):
         },
     )
 
+    vocab2 = vocabulary_service.create(
+        system_identity,
+        {
+            "id": "hasmetadata",
+            "props": {"datacite": "HasMetadata"},
+            "title": {"en": "Has metadata"},
+            "type": "relationtypes",
+        },
+    )
+
     Vocabulary.index.refresh()
 
-    return vocab
+    return [vocab1, vocab2]
 
 
 @pytest.fixture(scope="module")
@@ -1593,7 +1622,7 @@ RunningApp = namedtuple(
         "description_type_v",
         "date_type_v",
         "contributors_role_v",
-        "relation_type_v",
+        "relation_types_v",
         "licenses_v",
         "funders_v",
         "awards_v",
@@ -1616,7 +1645,7 @@ def running_app(
     description_type_v,
     date_type_v,
     contributors_role_v,
-    relation_type_v,
+    relation_types_v,
     licenses_v,
     funders_v,
     awards_v,
@@ -1640,7 +1669,7 @@ def running_app(
         description_type_v,
         date_type_v,
         contributors_role_v,
-        relation_type_v,
+        relation_types_v,
         licenses_v,
         funders_v,
         awards_v,
@@ -2013,20 +2042,22 @@ def record_community(db, uploader, minimal_record, community):
             """Creates new record that belongs to the same community."""
             # create draft
             draft = current_rdm_records_service.create(uploader.identity, record_dict)
-            # publish and get record
-            result_item = current_rdm_records_service.publish(
-                uploader.identity, draft.id
-            )
-            record = result_item._record
+            record = draft._record
             if community:
                 # add the record to the community
                 community_record = community._record
                 record.parent.communities.add(community_record, default=False)
                 record.parent.commit()
                 db.session.commit()
-                current_rdm_records_service.indexer.index(
-                    record, arguments={"refresh": True}
-                )
+
+            # publish and get record
+            result_item = current_rdm_records_service.publish(
+                uploader.identity, draft.id
+            )
+            record = result_item._record
+            current_rdm_records_service.indexer.index(
+                record, arguments={"refresh": True}
+            )
 
             return record
 

@@ -13,7 +13,17 @@
 from datetime import timedelta
 
 import idutils
+from invenio_access.permissions import system_permission
 from invenio_i18n import lazy_gettext as _
+from invenio_records_resources.services.records.queryparser import QueryParser
+from invenio_records_resources.services.records.queryparser.transformer import (
+    RestrictedTerm,
+    RestrictedTermValue,
+    SearchFieldTransformer,
+)
+
+import invenio_rdm_records.services.communities.moderation as communities_moderation
+from invenio_rdm_records.services.components.verified import UserModerationHandler
 
 from . import tokens
 from .resources.serializers import DataCite43JSONSerializer
@@ -21,6 +31,7 @@ from .services import facets
 from .services.config import lock_edit_published_files
 from .services.permissions import RDMRecordPermissionPolicy
 from .services.pids import providers
+from .services.queryparser import word_internal_notes
 
 # Invenio-RDM-Records
 # ===================
@@ -130,6 +141,12 @@ RDM_DEFAULT_FILES_ENABLED = True
 #
 RDM_ALLOW_RESTRICTED_RECORDS = True
 """Allow users to set restricted/private records."""
+
+#
+# Record communities
+#
+RDM_COMMUNITY_REQUIRED_TO_PUBLISH = False
+"""Enforces at least one community per record."""
 
 #
 # Search configuration
@@ -245,6 +262,7 @@ RDM_SORT_OPTIONS = {
 
 """
 
+
 RDM_SEARCH = {
     "facets": ["access_status", "file_type", "resource_type"],
     "sort": [
@@ -255,6 +273,18 @@ RDM_SEARCH = {
         "mostviewed",
         "mostdownloaded",
     ],
+    "query_parser_cls": QueryParser.factory(
+        mapping={
+            "internal_notes.note": RestrictedTerm(system_permission),
+            "internal_notes.id": RestrictedTerm(system_permission),
+            "internal_notes.added_by": RestrictedTerm(system_permission),
+            "internal_notes.timestamp": RestrictedTerm(system_permission),
+            "_exists_": RestrictedTermValue(
+                system_permission, word=word_internal_notes
+            ),
+        },
+        tree_transformer_cls=SearchFieldTransformer,
+    ),
 }
 """Record search configuration.
 
@@ -361,6 +391,7 @@ RDM_PERSISTENT_IDENTIFIERS = {
         "validator": idutils.is_doi,
         "normalizer": idutils.normalize_doi,
         "is_enabled": providers.DataCitePIDProvider.is_enabled,
+        "ui": {"default_selected": "yes"},  # "yes", "no" or "not_needed"
     },
     "oai": {
         "providers": ["oai"],
@@ -405,6 +436,28 @@ RDM_PARENT_PERSISTENT_IDENTIFIERS = {
 
 RDM_ALLOW_EXTERNAL_DOI_VERSIONING = True
 """Allow records with external DOIs to be versioned."""
+
+RDM_OPTIONAL_DOI_TRANSITIONS = {
+    "datacite": {
+        "allowed_providers": ["datacite"],
+        "message": _(
+            "A previous version used a DOI registered from {sitename}. This version must also use a DOI from {sitename}."
+        ),
+    },
+    "external": {
+        "allowed_providers": ["external", "not_needed"],
+        "message": _(
+            "A previous version was published with a DOI from an external provider or without one. You cannot use a DOI registered from {sitename} for this version."
+        ),
+    },
+    "not_needed": {
+        "allowed_providers": ["external", "not_needed"],
+        "message": _(
+            "A previous version was published with a DOI from an external provider or without one. You cannot use a DOI registered from {sitename} for this version."
+        ),
+    },
+}
+"""Optional DOI transitions for versioning. The allowed providers are the ones that can be used for the new version and when you edit a published record."""
 
 # Configuration for the DataCiteClient used by the DataCitePIDProvider
 
@@ -548,6 +601,16 @@ RDM_LOCK_EDIT_PUBLISHED_FILES = lock_edit_published_files
    signature to implement:
    def lock_edit_published_files(service, identity, record=None, draft=None):
 """
+
+RDM_CONTENT_MODERATION_HANDLERS = [
+    UserModerationHandler(),
+]
+"""Records content moderation handlers."""
+
+RDM_COMMUNITY_CONTENT_MODERATION_HANDLERS = [
+    communities_moderation.UserModerationHandler(),
+]
+"""Community content moderation handlers."""
 
 # Feature flag to enable/disable user moderation
 RDM_USER_MODERATION_ENABLED = False

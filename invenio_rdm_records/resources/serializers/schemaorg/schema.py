@@ -199,6 +199,7 @@ class SchemaorgSchema(BaseSerializerSchema, CommonFieldsMixin):
     # Fields that are specific to certain resource types.
     measurementTechnique = fields.Method("get_measurement_techniques")
     distribution = fields.Method("get_distribution")
+    uploadDate = fields.Method("get_upload_date")
 
     def get_id(self, obj):
         """Get id. Use the DOI expressed as a URL."""
@@ -209,10 +210,14 @@ class SchemaorgSchema(BaseSerializerSchema, CommonFieldsMixin):
 
     def get_type(self, obj):
         """Get type. Use the vocabulary service to get the schema.org type."""
+        resource_type_id = py_.get(obj, "metadata.resource_type.id")
+        if not resource_type_id:
+            return missing
+
         props = get_vocabulary_props(
             "resourcetypes",
             ["props.schema.org"],
-            py_.get(obj, "metadata.resource_type.id"),
+            resource_type_id,
         )
         ret = props.get("schema.org", "https://schema.org/CreativeWork")
         return ret
@@ -232,8 +237,12 @@ class SchemaorgSchema(BaseSerializerSchema, CommonFieldsMixin):
 
     def get_publication_date(self, obj):
         """Get publication date."""
+        publication_date = py_.get(obj, "metadata.publication_date")
+        if not publication_date:
+            return missing
+
         try:
-            parsed_date = parse_edtf(py_.get(obj, "metadata.publication_date"))
+            parsed_date = parse_edtf(publication_date)
         except ParseException:
             return missing
 
@@ -417,7 +426,7 @@ class SchemaorgSchema(BaseSerializerSchema, CommonFieldsMixin):
         return ids or missing
 
     def get_url(self, obj):
-        """Get Zenodo URL of the record."""
+        """Get URL of the record."""
         self_url = py_.get(obj, "links.self_html")
         return self_url or missing
 
@@ -496,3 +505,17 @@ class SchemaorgSchema(BaseSerializerSchema, CommonFieldsMixin):
             lambda x: x.get("relation_type", {}).get("id") in relation_types,
             identifiers,
         )
+
+    # Fields specific to https://schema.org/VideoObject
+    # Useful for video crawlers per
+    # https://developers.google.com/search/docs/appearance/structured-data/video
+    def _is_video(self, obj):
+        return self.get_type(obj) == "https://schema.org/VideoObject"
+
+    def get_upload_date(self, obj):
+        """Get uploadDate."""
+        if not self._is_video(obj):
+            return missing
+
+        # Creation date is closest in meaning to when video was uploaded
+        return self.get_creation_date(obj)

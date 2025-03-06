@@ -52,6 +52,7 @@ from .dumpers import (
     EDTFListDumperExt,
     GrantTokensDumperExt,
     StatisticsDumperExt,
+    SubjectHierarchyDumperExt,
 )
 from .systemfields import (
     HasDraftCheckField,
@@ -110,8 +111,6 @@ class CommonFieldsMixin:
     versions_model_cls = models.RDMVersionsState
     parent_record_cls = RDMParent
 
-    # Remember to update INDEXER_DEFAULT_INDEX in Invenio-App-RDM if you
-    # update the JSONSchema and mappings to a new version.
     schema = ConstantField("$schema", "local://records/record-v6.0.0.json")
 
     dumper = SearchDumper(
@@ -122,6 +121,7 @@ class CommonFieldsMixin:
             CombinedSubjectsDumperExt(),
             CustomFieldsDumperExt(fields_var="RDM_CUSTOM_FIELDS"),
             StatisticsDumperExt("stats"),
+            SubjectHierarchyDumperExt(),
         ]
     )
 
@@ -150,9 +150,24 @@ class CommonFieldsMixin:
         funding_award=PIDListRelation(
             "metadata.funding",
             relation_field="award",
-            keys=["title", "number", "identifiers", "acronym", "program"],
+            keys=[
+                "title",
+                "number",
+                "identifiers",
+                "acronym",
+                "program",
+                "subjects",
+                "organizations",
+            ],
             pid_field=Award.pid,
             cache_key="awards",
+        ),
+        funding_award_subjects=PIDNestedListRelation(
+            "metadata.funding",
+            relation_field="award.subjects",
+            keys=["subject", "scheme", "props"],
+            pid_field=Subject.pid,
+            cache_key="subjects",
         ),
         languages=PIDListRelation(
             "metadata.languages",
@@ -169,7 +184,7 @@ class CommonFieldsMixin:
         ),
         subjects=PIDListRelation(
             "metadata.subjects",
-            keys=["subject", "scheme"],
+            keys=["subject", "scheme", "props", "identifiers"],
             pid_field=Subject.pid,
             cache_key="subjects",
         ),
@@ -521,9 +536,39 @@ class RDMRecord(CommonFieldsMixin, Record):
         published yet or all versions are deleted.
         """
         latest_record = cls.get_latest_by_parent(parent)
-        if latest_record.deletion_status != RecordDeletionStatusEnum.PUBLISHED.value:
+        if (
+            latest_record
+            and latest_record.deletion_status
+            != RecordDeletionStatusEnum.PUBLISHED.value
+        ):
             return None
         return latest_record
+
+    @classmethod
+    def get_previous_published_by_parent(cls, parent):
+        """Get the previous of latest published record for the specified parent record.
+
+        It might return None if there is no latest published version i.e not
+        published yet or all versions are deleted or there is only one published record.
+
+        This method is needed instead of `get_latest_published_by_parent` because during
+        publish the version state is updated before the record is actually published.
+        That means, that `get_latest_published_by_parent` returns always the record that
+        is about to be published and thus, we cannot use it in the `component.publish()`
+        method to retrieve the actual last published record.
+
+        Check `services.components.pids.PIDsComponent.publish()` for how it is used.
+        """
+        # We need no_autoflush because the record.versions access triggers automatically
+        # one
+        with db.session.no_autoflush:
+            records = cls.get_records_by_parent(parent)
+            for record in records:
+                latest_version_index = record.versions.latest_index
+                if latest_version_index > 1:
+                    if record.versions.index == latest_version_index - 1:
+                        return record
+            return None
 
 
 RDMFileRecord.record_cls = RDMRecord

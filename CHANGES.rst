@@ -2,7 +2,8 @@
 ..
     Copyright (C) 2019-2024 CERN.
     Copyright (C) 2019-2024 Northwestern University.
-
+    Copyright (C) 2024      KTH Royal Institute of Technology.
+    Copyright (C) 2024 Graz University of Technology.
 
     Invenio-RDM-Records is free software; you can redistribute it and/or
     modify it under the terms of the MIT License; see LICENSE file for more
@@ -10,6 +11,265 @@
 
 Changes
 =======
+
+Version v17.1.0 (released 2025-02-21)
+
+- views: FAIR signposting level 1 support
+- views: FAIR signposting remove linkset link to itself
+
+Version v17.0.2 (released 2025-02-14)
+
+- serializers/dcat: fix broken subject serialization for terms with apostrophes
+
+Version v17.0.1 (released 2025-02-13)
+
+- Bump pre-release dependencies to stable.
+
+Version v17.0.0 (released 2025-02-13)
+
+- Promote to stable release.
+- serializers: DataCite to DCAT-AP: fix undefined variable $cheme for relation type has metadata
+- services: proper escape the fields key in links generation
+- UISerializer: add polygon locations to serializer in addition to points (#1924)
+
+Version v17.0.0.dev2 (released 2025-01-23)
+
+Version v17.0.0.dev1 (released 2024-12-16)
+
+- fix: flask-sqlalchemy.pagination >= 3.0.0
+- comp: make compatible to flask-sqlalchemy>=3.1
+- setup: change to reusable workflows
+- setup: bump major dependencies
+
+Version v16.8.0 (released 2025-01-27)
+
+- resources: expose record revisions
+
+Version v16.7.1 (released 2025-01-21)
+
+- optional-doi: fix new upload disabled states
+
+Version v16.7.0 (released 2025-01-21)
+
+- pids: improve deposit UI for optional DOI
+- deposit-ui: fix affiliation selection input display
+
+Version v16.6.1 (released 2025-01-16)
+
+- Revert "bug: add custom comment notification for record/draft requests"
+    * This is actually a breaking change since it introduces a new
+      set of notification templates that will potentialy not be
+      styled if overridden in an instance's overlay.
+
+Version v16.6.0 (released 2025-01-16)
+
+- notifications: add custom comment template for record inclusion
+  and draft review requests
+- deposit-ui: fix affiliations dropdown behavior for custom values
+- moderation: fix use of uow
+- serializers/bibtex: Conference paper not falling back to proceedings
+- serializers/bibtex: Conference proceeding to proceedings
+- serializers/bibtex: year and month using publication date
+- rights: fix serialize condition for controlled license
+
+Version v16.5.1 (released 2024-12-16)
+
+- pids: add manage permission to be able to manage DOIs
+- deposit: fix validation check when user needs a DOI and DOI is optional
+
+Version v16.5.0 (released 2024-12-16)
+
+- pids: add support for optional DOI
+
+Version v16.4.1 (released 2024-12-11)
+
+- mappings: add missing `identifiers` to community orgs
+    * Adds the missing `identifiers` mapping field to community organizations
+
+Version v16.4.0 (released 2024-12-10)
+
+- bibtex: add trailing comma in url field
+- community-records: allow scan search
+    * Adds `scan` and `scan_params` arguments to
+      `CommunityRecordsService.search(...)`, to allow for serving scan
+      results (but only via the service).
+- serializer: updated subjects and affiliations in dcat
+- schema: added identifiers to subjects
+- serializers: add datapackage serializer (#1742)
+
+Version v16.3.4 (released 2024-12-06)
+
+- github: return None for `NOASSERTION` license
+- datacite: fix funding serialization for optional award fields
+    * Makes sure that we handle missing values for optional award fields
+      like "title" and "number".
+
+Version v16.3.3 (released 2024-12-04)
+
+- github: handle missing repo license
+
+Version v16.3.2 (released 2024-12-04)
+
+- github: lower license spdx id
+
+Version v16.3.1 (released 2024-12-02)
+
+- deposit-ui: make sure we handle null/undefined for SchemaField
+- deposit-ui: skip unecessary removal of empty values in serialization
+    * This initial removal of empty values can be dangerous, since the
+      `record` at this point is a UI object representation that could
+      potentially include circular references or very deeply nested objects.
+      Since `_removeEmptyValues` is recursive this can lead to stack
+      overflow errors.
+- deposit-ui: log errors on all deposit form actions
+    * This can help with debugging unexpected non-network related errors
+      that might occur in the logic before/after a REST API requests.
+
+Version v16.3.0 (released 2024-11-27)
+
+- github: added default license from Github API
+- deposit-ui: fix affiliations rendering during edits
+- github: added custom_fields in metadata extraction
+- github: added optional swhid field to the bibtex export
+- datacite: improve error logging formatting and grouping
+    * Avoids f-strings in logging calls so that entries are easier to be
+      grouped.
+    * Adds exception info to the logged errors.
+- config: added service schema from config
+- requests: manage sending notifications
+
+Version v16.2.0 (released 2024-11-19)
+
+- search: pass search parameters to collection records
+
+Version v16.1.1 (released 2024-11-19)
+
+- communities: fix set/unset of default record community
+    * Closes https://github.com/inveniosoftware/invenio-app-rdm/issues/2869
+    * Fixes the allowed values that can be passed to set/unset the default
+      community of a record.
+    * Part of the fix is to also accept an empty string ("") as a valid
+      value when setting the "default" field, which was a currently wrong
+      behavior in some UI logic.
+
+Version v16.1.0 (released 2024-11-18)
+
+- tokens: disable "sub" verification
+    * According to the JWT Specification (https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.2)
+      `sub` has to be a string. PyJWT v2.10.0 started enforcing this validation,
+      which breaks our usage of storing an object in the `sub` field.
+    * Fixes jwt.decode options for specifying required fields.
+- jsonschemas: backport "internal_notes" to v6.0.0
+    * Backports the "internal_notes" field to the v6.0.0 JSONSchema, since
+      it is backwards compatible, and thus doesn't require any record
+      migration overhead.
+- UI: display all affiliations
+
+Version v16.0.1 (released 2024-11-11)
+
+- deposit-ui: fix creator affiliations selection display
+    * Fixes a bug where the selected affiliations from the dropdown do not
+      appear inside the input box.
+
+Version v16.0.0 (released 2024-11-11)
+
+- identifiers: allow alternative identifiers with the same scheme but different values
+- records: add intenal_notes schema field and bump of jsonschema version
+
+Version v15.7.1 (released 2024-11-06)
+
+- installation: bump babel-edtf to >=1.2.0
+- tests: fix EDTF interval with unknown start/end
+- ui: use config instead of hardcoded url
+- setup: forward compatibility to itsdangerous>=2.1
+- fix: DeprecationWarning of SQLAlchemy
+
+Version v15.7.0 (released 2024-11-04)
+
+- resources: make record error handlers configurable
+    * Possible via the new `RDM_RECORDS_ERROR_HANDLERS` config variable.
+- components: make content moderation configurable
+    * Closes #1861.
+    * Adds a new `RRM_CONTENT_MODERATION_HANDLERS` config variable to allow
+      for configuring multiple handlers for the different write actions.
+- user_moderation: use search for faster actions
+    * Use search results to determine the user's list of records.
+    * Use a TaskOp and Unit of Work to avoid sending Celery tasks immediately.
+    * Add a cleanup task that will perform a more thorough check using the
+      DB to lookup the user's records.
+- deposit: add missing fields to record deserializer
+- UI/UX: add consistent suggestions display to affiliations
+- UI/UX: improve display of ROR information
+- collections: move records search into service
+- collections: added task to compute number of records for each collection
+- services: make file-service components configurable
+- access notification: provide correct draft preview link
+    * Closes inveniosoftware/invenio-app-rdm#2827
+
+Version v15.6.0 (released 2024-10-18)
+
+- community: added myCommunitiesEnabled prop to CommunitySelectionSearch
+
+Version v15.5.0 (released 2024-10-18)
+
+- community: added autofocus prop to CommunitySelectionSearch
+
+Version v15.4.0 (released 2024-10-17)
+
+- DOI: fix wrong parent DOI link
+- community: added props to make CommunitySelectionSearch reusable
+
+Version v15.3.0 (released 2024-10-16)
+
+- collections: display pages and REST API
+- deposit: add feature flag for required community submission flow
+- mappings: disable doc_values for geo_shape fields (#1807)
+    * Fixes multiple values for ``metadata.locaations.features``.
+
+Version v15.2.0 (released 2024-10-10)
+
+- webpack: update axios and react-searchkit(due to axios) major versions
+
+Version v15.1.0 (released 2024-10-10)
+
+- jobs: register embargo update job type
+- installation: upgrade invenio-jbs
+
+Version v15.0.0 (released 2024-10-08)
+
+- installation: bump invenio-communities
+- dumper: refactor and updated docstring
+- awards: added subjects and orgs, updated mappings
+- relations: added subject relation in awards
+
+Version v14.0.0 (released 2024-10-04)
+
+- installation: bump invenio-vocabularies & invenio-communities
+
+Version v13.0.0 (released 2024-10-03)
+
+- collections: added feature, containing core functionalities and DB models
+- ui: fixed propTypes warnings
+- dependencies: bump flask-iiif to >1.0.0
+
+Version v12.2.2 (released 2024-09-30)
+
+- Improve handling of draft PID in RecordCommunitiesService
+- Revert "deposit: check permission and set disable tooltip for publish button"
+- Remove DeprecationWarning for sqlalchemy
+- Add compatibility layer to move to flask>=3
+
+Version v12.2.1 (released 2024-09-19)
+
+- file upload: better handling of errors when uploading empty files
+- serializers: ensure that the vocab id is set before performing a look up
+- deposit: take into account the can_publish permission to control when the
+           Publish button should be enabled or disabled
+
+Version v12.1.1 (released 2024-09-11)
+
+- resource: fix add record to community
+- controls: refactored isDisabled function
 
 Version v12.1.0 (released 2024-08-30)
 
