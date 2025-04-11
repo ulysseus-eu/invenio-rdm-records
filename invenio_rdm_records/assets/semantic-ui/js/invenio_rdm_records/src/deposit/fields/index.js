@@ -7,6 +7,7 @@
 
 export { AccessRightField } from "./AccessField";
 export { DescriptionsField } from "./DescriptionsField";
+export { RelevantPublicationsField, MostSignificantProjectsField } from "./PublicationsField";
 export { LanguagesField } from "./LanguagesField";
 export { CreatibutorsField } from "./CreatibutorsField";
 export { DatesField } from "./DatesField";
