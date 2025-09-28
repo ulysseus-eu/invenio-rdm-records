@@ -41,6 +41,7 @@ def get_or_create_user(email):
             active=True,
             preferences=dict(
                 visibility="public",
+                profile_visibility="public",
                 email_visibility="public",
                 locale=current_app.config.get("BABEL_DEFAULT_LOCALE", "en"),
                 timezone=current_app.config.get(
