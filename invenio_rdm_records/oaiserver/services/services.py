@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2022-2024 Graz University of Technology.
+# Copyright (C) 2022-2025 Graz University of Technology.
 #
 # Invenio-RDM-Records is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
@@ -158,21 +158,20 @@ class OAIPMHServerService(Service):
         """Perform search over OAI sets."""
         self.require_permission(identity, "read")
 
+        filters = []
         search_params = map_search_params(self.config.search, params)
 
         query_param = search_params["q"]
-        filters = []
-
         if query_param:
-            filters.extend(
-                [
+            filters.append(
+                or_(
                     OAISet.name.ilike(f"%{query_param}%"),
                     OAISet.spec.ilike(f"%{query_param}%"),
-                ]
+                )
             )
 
         oai_sets = (
-            OAISet.query.filter(or_(*filters))
+            OAISet.query.filter(*filters)
             .order_by(
                 search_params["sort_direction"](text(",".join(search_params["sort"])))
             )

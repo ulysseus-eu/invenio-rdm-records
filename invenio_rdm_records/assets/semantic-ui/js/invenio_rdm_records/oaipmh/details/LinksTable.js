@@ -1,5 +1,5 @@
 // This file is part of InvenioRdmRecords
-// Copyright (C) 2022-2024 CERN.
+// Copyright (C) 2022-2025 CERN.
 //
 // Invenio RDM is free software; you can redistribute it and/or modify it
 // under the terms of the MIT License; see LICENSE file for more details.
@@ -80,11 +80,17 @@ class LinksTable extends Component {
    * Used to update links when the metadata prefix is changed.
    */
   replaceLinkPrefix = (link, newPrefix) => {
-    const oldPrefix = this.getPrefixFromLink(link);
-    if (oldPrefix) {
-      return link.replace(oldPrefix, newPrefix);
+    if (_isEmpty(link)) return null;
+
+    const prefixParam = "metadataPrefix";
+    const url = new URL(link);
+    const params = url.searchParams;
+
+    if (params.has(prefixParam)) {
+      params.set(prefixParam, newPrefix);
     }
-    return link;
+
+    return url.toString();
   };
 
   /**
@@ -95,8 +101,8 @@ class LinksTable extends Component {
   getPrefixFromLink = (link) => {
     if (_isEmpty(link)) return null;
     const prefixParam = "metadataPrefix";
-    const params = new URLSearchParams(link);
-    const prefix = params.get(prefixParam);
+    const url = new URL(link);
+    const prefix = url.searchParams.get(prefixParam);
 
     return prefix || null;
   };

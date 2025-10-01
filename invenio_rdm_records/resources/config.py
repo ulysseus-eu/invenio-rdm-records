@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2020-2024 CERN.
+# Copyright (C) 2020-2025 CERN.
 # Copyright (C) 2020-2021 Northwestern University.
 # Copyright (C) 2022 Universität Hamburg.
 # Copyright (C) 2023 Graz University of Technology.
@@ -37,6 +37,7 @@ from invenio_requests.resources.requests.config import RequestSearchRequestArgsS
 from ..services.errors import (
     AccessRequestExistsError,
     CommunityRequiredError,
+    DeletionStatusException,
     GrantExistsError,
     InvalidAccessRestrictions,
     RecordDeletedException,
@@ -56,6 +57,7 @@ from .serializers import (
     CSVRecordSerializer,
     DataCite43JSONSerializer,
     DataCite43XMLSerializer,
+    DataPackageSerializer,
     DCATSerializer,
     DublinCoreXMLSerializer,
     FAIRSignpostingProfileLvl2Serializer,
@@ -83,6 +85,10 @@ def _bibliography_headers(obj_or_list, code, many=False):
     _etag_headers["content-type"] = "text/plain"
     return _etag_headers
 
+
+# Schema.org profiles
+DATAPACKAGE_PROFILE = "https://datapackage.org/profiles/2.0/datapackage.json"
+ROCRATE_PROFILE = "https://w3id.org/ro/crate/1.1"
 
 record_serializers = {
     "application/json": ResponseHandler(JSONSerializer(), headers=etag_headers),
@@ -122,6 +128,9 @@ record_serializers = {
     ),
     "application/vnd.datacite.datacite+xml": ResponseHandler(
         DataCite43XMLSerializer(), headers=etag_headers
+    ),
+    f'application/ld+json;profile="{DATAPACKAGE_PROFILE}"': ResponseHandler(
+        DataPackageSerializer(), headers=etag_headers
     ),
     "application/x-dc+xml": ResponseHandler(
         DublinCoreXMLSerializer(), headers=etag_headers
@@ -199,6 +208,16 @@ error_handlers = {
             )
         )
     ),
+    DeletionStatusException: create_error_handler(
+        lambda e: (
+            HTTPJSONException(code=404, description=_("Record not found"))
+            if e.record.tombstone and not e.record.tombstone.is_visible
+            else HTTPJSONException(
+                code=400,
+                description=_("Record in unexpected deletion status."),
+            )
+        )
+    ),
     RecordSubmissionClosedCommunityError: create_error_handler(
         lambda e: HTTPJSONException(
             code=403,
@@ -238,21 +257,25 @@ class RDMRecordResourceConfig(RecordResourceConfig, ConfiguratorMixin):
     routes["set-record-quota"] = "/<pid_value>/quota"
     routes["set-user-quota"] = "/users/<pid_value>/quota"
     routes["item-revision-list"] = "/<pid_value>/revisions"
+    routes["item-revision"] = "/<pid_value>/revisions/<revision_id>"
+    routes["request-deletion"] = "/<pid_value>/request-deletion"
 
     request_view_args = {
         "pid_value": ma.fields.Str(),
         "scheme": ma.fields.Str(),
+        "revision_id": ma.fields.Str(),
     }
 
     request_read_args = {
         "style": ma.fields.Str(),
         "locale": ma.fields.Str(),
         "include_deleted": ma.fields.Bool(),
+        "include_previous": ma.fields.Bool(),
     }
 
     request_body_parsers = {
         "application/json": RequestBodyParser(JSONDeserializer()),
-        'application/ld+json;profile="https://w3id.org/ro/crate/1.1"': RequestBodyParser(
+        f'application/ld+json;profile="{ROCRATE_PROFILE}"': RequestBodyParser(
             ROCrateJSONDeserializer()
         ),
     }
@@ -278,8 +301,6 @@ class RDMRecordResourceConfig(RecordResourceConfig, ConfiguratorMixin):
 class RDMRecordFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
     """Bibliographic record files resource config."""
 
-    allow_upload = False
-    allow_archive_download = FromConfig("RDM_ARCHIVE_DOWNLOAD_ENABLED", True)
     blueprint_name = "record_files"
     url_prefix = "/records/<pid_value>"
 
@@ -305,7 +326,6 @@ class RDMRecordFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
 class RDMDraftFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
     """Bibliographic record files resource config."""
 
-    allow_archive_download = FromConfig("RDM_ARCHIVE_DOWNLOAD_ENABLED", True)
     blueprint_name = "draft_files"
     url_prefix = "/records/<pid_value>/draft"
 
@@ -317,11 +337,12 @@ class RDMDraftFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
     }
 
 
+#
+# Record Media files
+#
 class RDMRecordMediaFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
     """Bibliographic record files resource config."""
 
-    allow_upload = False
-    allow_archive_download = FromConfig("RDM_ARCHIVE_DOWNLOAD_ENABLED", True)
     blueprint_name = "record_media_files"
     url_prefix = "/records/<pid_value>"
     routes = {
@@ -329,6 +350,7 @@ class RDMRecordMediaFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
         "item": "/media-files/<key>",
         "item-content": "/media-files/<key>/content",
         "item-commit": "/media-files/<key>/commit",
+        "item-multipart-content": "/media-files/<path:key>/content/<int:part>",
         "list-archive": "/media-files-archive",
     }
 
@@ -356,12 +378,11 @@ class RDMRecordMediaFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
 
 
 #
-# Draft files
+# Draft Media files
 #
 class RDMDraftMediaFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
     """Bibliographic record files resource config."""
 
-    allow_archive_download = FromConfig("RDM_ARCHIVE_DOWNLOAD_ENABLED", True)
     blueprint_name = "draft_media_files"
     url_prefix = "/records/<pid_value>/draft"
 
@@ -370,6 +391,7 @@ class RDMDraftMediaFilesResourceConfig(FileResourceConfig, ConfiguratorMixin):
         "item": "/media-files/<key>",
         "item-content": "/media-files/<key>/content",
         "item-commit": "/media-files/<key>/commit",
+        "item-multipart-content": "/media-files/<path:key>/content/<int:part>",
         "list-archive": "/media-files-archive",
     }
 
@@ -594,7 +616,7 @@ class RDMOrganizationRecordsResourceConfig(RecordResourceConfig, ConfiguratorMix
 class RDMRecordCommunitiesResourceConfig(CommunityResourceConfig, ConfiguratorMixin):
     """Record communities resource config."""
 
-    blueprint_name = "records-community"
+    blueprint_name = "record_communities"
     url_prefix = "/records"
     routes = {
         "list": "/<pid_value>/communities",
@@ -616,7 +638,7 @@ class RDMRecordCommunitiesResourceConfig(CommunityResourceConfig, ConfiguratorMi
 class RDMRecordRequestsResourceConfig(ResourceConfig, ConfiguratorMixin):
     """Record communities resource config."""
 
-    blueprint_name = "records-requests"
+    blueprint_name = "record_requests"
     url_prefix = "/records"
     routes = {"list": "/<record_pid>/requests"}
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2019-2024 CERN.
+# Copyright (C) 2019-2025 CERN.
 # Copyright (C) 2019 Northwestern University.
 # Copyright (C) 2021-2024 Graz University of Technology.
 # Copyright (C) 2023 TU Wien.
@@ -23,12 +23,20 @@ from invenio_records_resources.services.records.queryparser.transformer import (
 )
 
 import invenio_rdm_records.services.communities.moderation as communities_moderation
+from invenio_rdm_records.services.components.pids import validate_optional_doi
 from invenio_rdm_records.services.components.verified import UserModerationHandler
 
 from . import tokens
+from .requests.community_inclusion import CommunityInclusion
+from .requests.community_submission import CommunitySubmission
 from .resources.serializers import DataCite43JSONSerializer
 from .services import facets
 from .services.config import lock_edit_published_files
+from .services.deletion_policy import (
+    GracePeriodPolicy,
+    RDMRecordDeletionPolicy,
+    RequestDeletionPolicy,
+)
 from .services.permissions import RDMRecordPermissionPolicy
 from .services.pids import providers
 from .services.queryparser import word_internal_notes
@@ -124,8 +132,11 @@ RDM_PERMISSION_POLICY = RDMRecordPermissionPolicy
 # Record review requests
 #
 RDM_RECORDS_REVIEWS = [
-    "community-submission",
+    CommunitySubmission.type_id,
 ]
+"""List of review request types."""
+RDM_COMMUNITY_SUBMISSION_REQUEST_CLS = CommunitySubmission
+"""Request type for community submission requests."""
 
 #
 # Record files configuration
@@ -143,10 +154,70 @@ RDM_ALLOW_RESTRICTED_RECORDS = True
 """Allow users to set restricted/private records."""
 
 #
+# Record deletion by users
+#
+RDM_RECORD_DELETION_POLICY = RDMRecordDeletionPolicy
+"""Policy class which evaluates whether a record can be deleted by a user."""
+
+RDM_IMMEDIATE_RECORD_DELETION_ENABLED = False
+"""Allow users to immediately delete records."""
+
+RDM_IMMEDIATE_RECORD_DELETION_POLICIES = [GracePeriodPolicy()]
+"""List of policies for immediate record deletion.
+
+Policies are executed in order and the first one to return True is used
+as the policy for the record. As such, policies should be specified from most
+to least specific.
+
+To update a policy, create a duplicate of it and add a check on creation date to
+both. When your policy comes into effect on a date in the future, and this
+is the date which you will use to check whether the new or old policy will apply.
+"""
+
+RDM_IMMEDIATE_RECORD_DELETION_CHECKLIST = []
+"""Checklist which appears on the modal to redirect user from immediate record deletion if possible.
+
+The config accepts a list of dictionaries with "label" and "message" key-value pairs.
+The "label" is used as the checklist question item, and the "message" is displayed in
+case the user selects "Yes" on the checklist item.
+
+Example config value:
+
+.. code-block:: python
+
+    RDM_IMMEDIATE_RECORD_DELETION_CHECKLIST = [
+        {
+            "label": _("I want to change the metadata (title, description, etc.)"),
+            "message": _(
+                "You can edit the metadata of a published record at any time."
+            ),
+        },
+        {
+            "label": _("I forgot to submit to a community"),
+            "message": _(
+                "You can submit a published record to a community by going to the "
+                "record landing page and selecting the cog in the communities sidebar."
+            ),
+        },
+    ]
+"""
+
+RDM_REQUEST_RECORD_DELETION_ENABLED = False
+"""Allow users to request record deletion."""
+
+RDM_REQUEST_RECORD_DELETION_POLICIES = [RequestDeletionPolicy()]
+"""List of policies for record deletion requests."""
+
+RDM_REQUEST_RECORD_DELETION_CHECKLIST = []
+"""Checklist which appears on the modal to redirect user from record deletion request if possible."""
+
+#
 # Record communities
 #
 RDM_COMMUNITY_REQUIRED_TO_PUBLISH = False
 """Enforces at least one community per record."""
+RDM_COMMUNITY_INCLUSION_REQUEST_CLS = CommunityInclusion
+"""Request type for record inclusion requests."""
 
 #
 # Search configuration
@@ -437,27 +508,13 @@ RDM_PARENT_PERSISTENT_IDENTIFIERS = {
 RDM_ALLOW_EXTERNAL_DOI_VERSIONING = True
 """Allow records with external DOIs to be versioned."""
 
-RDM_OPTIONAL_DOI_TRANSITIONS = {
-    "datacite": {
-        "allowed_providers": ["datacite"],
-        "message": _(
-            "A previous version used a DOI registered from {sitename}. This version must also use a DOI from {sitename}."
-        ),
-    },
-    "external": {
-        "allowed_providers": ["external", "not_needed"],
-        "message": _(
-            "A previous version was published with a DOI from an external provider or without one. You cannot use a DOI registered from {sitename} for this version."
-        ),
-    },
-    "not_needed": {
-        "allowed_providers": ["external", "not_needed"],
-        "message": _(
-            "A previous version was published with a DOI from an external provider or without one. You cannot use a DOI registered from {sitename} for this version."
-        ),
-    },
-}
-"""Optional DOI transitions for versioning. The allowed providers are the ones that can be used for the new version and when you edit a published record."""
+
+RDM_OPTIONAL_DOI_VALIDATOR = validate_optional_doi
+"""Optional DOI transitions validate method.
+
+Check the signature of validate_optional_doi for more information.
+"""
+
 
 # Configuration for the DataCiteClient used by the DataCitePIDProvider
 
@@ -640,6 +697,14 @@ RDM_FILES_DEFAULT_MAX_FILE_SIZE = None
 
 RDM_DATACITE_FUNDER_IDENTIFIERS_PRIORITY = ("ror", "doi", "grid", "isni", "gnd")
 """Priority of funder identifiers types to be used for DataCite serialization."""
+
+RDM_DATACITE_DUMP_OPENAIRE_ACCESS_RIGHTS = False
+"""Flag to control dumping DataCite OpenAIRE access rights.
+
+See https://guidelines.openaire.eu/en/latest/data/field_rights.html for further
+information on how the OpenAIRE Guidelines expect access rights to be exposed
+via the DataCite schema.
+"""
 
 RDM_IIIF_MANIFEST_FORMATS = [
     "gif",

@@ -6,6 +6,8 @@
     en: Contact person
     sv: Kontaktperson
     de: Kontaktperson
+    es: Persona de contacto
+    cs: Kontaktní osoba
 - id: datacollector
   props:
     datacite: DataCollector
@@ -14,6 +16,8 @@
     en: Data collector
     sv: Datainsamlare
     de: DatensammlerIn
+    es: Recolector de datos
+    cs: Sběratel dat
 - id: datacurator
   props:
     datacite: DataCurator
@@ -22,6 +26,8 @@
     en: Data curator
     sv: Datakurator
     de: DatenkuratorIn
+    es: Curador de datos
+    cs: Kurátor dat
 - id: datamanager
   props:
     datacite: DataManager
@@ -30,6 +36,8 @@
     en: Data manager
     sv: Dataansvarig
     de: DatenmanagerIn
+    es: Gestor de datos
+    cs: Správce dat
 - id: distributor
   props:
     datacite: Distributor
@@ -38,6 +46,8 @@
     en: Distributor
     sv: Distributör
     de: VerteilerIn
+    es: Distribuidor
+    cs: Distributor
 - id: editor
   props:
     datacite: Editor
@@ -46,6 +56,8 @@
     en: Editor
     sv: Redaktör
     de: EditorIn
+    es: Editor
+    cs: Editor
 - id: hostinginstitution
   props:
     datacite: HostingInstitution
@@ -54,6 +66,8 @@
     en: Hosting institution
     sv: Värdinstitution
     de: Bereitstellende Institution
+    es: Institución anfitriona
+    cs: Hostující instituce
 - id: producer
   props:
     datacite: Producer
@@ -62,6 +76,8 @@
     en: Producer
     sv: Producent
     de: ProduzentIn
+    es: Productor
+    cs: Producent
 - id: projectleader
   props:
     datacite: ProjectLeader
@@ -70,6 +86,8 @@
     en: Project leader
     sv: Projektledare
     de: ProjektleiterIn
+    es: Líder de proyecto
+    cs: Vedoucí projektu
 - id: projectmanager
   props:
     datacite: ProjectManager
@@ -78,6 +96,8 @@
     en: Project manager
     sv: Projektansvarig
     de: ProjektmanagerIn
+    es: Gerente de proyecto
+    cs: Manažer projektu
 - id: projectmember
   props:
     datacite: ProjectMember
@@ -86,6 +106,8 @@
     en: Project member
     sv: Projektmedlem
     de: Projektmitglied
+    es: Miembro del proyecto
+    cs: Člen projektu
 - id: registrationagency
   props:
     datacite: RegistrationAgency
@@ -94,6 +116,8 @@
     en: Registration agency
     sv: Registreringsorgan
     de: Registrierungsstelle
+    es: Agencia de registro
+    cs: Registrační agentura
 - id: registrationauthority
   props:
     datacite: RegistrationAuthority
@@ -102,6 +126,8 @@
     en: Registration authority
     sv: Registreringsmyndighet
     de: Registrierungsbehörde
+    es: Autoridad de registro
+    cs: Registrační autorita
 - id: relatedperson
   props:
     datacite: RelatedPerson
@@ -110,6 +136,8 @@
     en: Related person
     sv: Relaterad person
     de: Verwandte Person
+    es: Persona relacionada
+    cs: Související osoba
 - id: researcher
   props:
     datacite: Researcher
@@ -118,6 +146,8 @@
     en: Researcher
     sv: Forskare
     de: WissenschaftlerIn
+    es: Investigador
+    cs: Výzkumník
 - id: researchgroup
   props:
     datacite: ResearchGroup
@@ -126,6 +156,8 @@
     en: Research group
     sv: Forskningsgrupp
     de: Forschungsgruppe
+    es: Grupo de investigación
+    cs: Výzkumná skupina
 - id: rightsholder
   props:
     datacite: RightsHolder
@@ -134,6 +166,8 @@
     en: Rights holder
     sv: Rättighetsinnehavare
     de: RechteinhaberIn
+    es: Titular de derechos
+    cs: Držitel práv
 - id: sponsor
   props:
     datacite: Sponsor
@@ -142,6 +176,8 @@
     en: Sponsor
     sv: Sponsor
     de: Sponsor
+    es: Patrocinador
+    cs: Sponzor
 - id: supervisor
   props:
     datacite: Supervisor
@@ -150,6 +186,8 @@
     en: Supervisor
     sv: Handledare
     de: SupervisorIn
+    es: Supervisor
+    cs: Supervizor
 - id: workpackageleader
   props:
     datacite: WorkPackageLeader
@@ -158,6 +196,8 @@
     en: Work package leader
     sv: Arbetspaketsledare
     de: ArbeitspaketleiterIn
+    es: Líder del paquete de trabajo
+    cs: Vedoucí pracovního balíku
 - id: other
   props:
     datacite: Other
@@ -166,3 +206,5 @@
     en: Other
     sv: Övriga
     de: Andere
+    es: Otro
+    cs: Jiné

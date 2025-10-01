@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2020-2024 CERN.
+# Copyright (C) 2020-2025 CERN.
 # Copyright (C) 2020 Northwestern University.
 # Copyright (C) 2021 TU Wien.
 # Copyright (C) 2021 data-futures.
 # Copyright (C) 2022 Universität Hamburg.
+# Copyright (C) 2025 KTH Royal Institute of Technology.
 #
 # Invenio-RDM-Records is free software; you can redistribute it and/or modify
 # it under the terms of the MIT License; see LICENSE file for more details.
@@ -13,9 +14,11 @@
 
 from functools import wraps
 
-from flask import abort, current_app, g, redirect, url_for
+from flask import abort, current_app, flash, g, redirect, url_for
 from flask_resources import Resource, resource_requestctx, response_handler, route
+from invenio_base import invenio_url_for
 from invenio_drafts_resources.resources import RecordResource
+from invenio_i18n import lazy_gettext as _
 from invenio_records_resources.resources.errors import ErrorHandlersMixin
 from invenio_records_resources.resources.records.resource import (
     request_data,
@@ -28,8 +31,6 @@ from invenio_records_resources.resources.records.resource import (
 from invenio_records_resources.resources.records.utils import search_preference
 from invenio_stats import current_stats
 from sqlalchemy.exc import NoResultFound
-
-from .urls import record_url_for
 
 
 def response_header_signposting(f):
@@ -44,8 +45,7 @@ def response_header_signposting(f):
     @wraps(f)
     def inner(*args, **kwargs):
         pid_value = resource_requestctx.view_args["pid_value"]
-        signposting_link = record_url_for(_app="api", pid_value=pid_value)
-
+        signposting_link = invenio_url_for("records.read", pid_value=pid_value)
         response = f(*args, **kwargs)
         if response.status_code != 200:
             return response
@@ -95,6 +95,8 @@ class RDMRecordResource(RecordResource):
             # TODO: move to users?
             route("POST", routes["set-user-quota"], self.set_user_quota),
             route("GET", p(routes["item-revision-list"]), self.search_revisions),
+            route("GET", p(routes["item-revision"]), self.read_revision),
+            route("POST", p(routes["request-deletion"]), self.request_deletion),
         ]
 
         return url_rules
@@ -103,9 +105,27 @@ class RDMRecordResource(RecordResource):
     @request_extra_args
     @request_view_args
     def search_revisions(self):
-        """Discard a previously reserved PID."""
+        """Return all revisions of a record."""
         item = self.service.search_revisions(
             identity=g.identity, id_=resource_requestctx.view_args["pid_value"]
+        )
+
+        return item.to_dict(), 200
+
+    @request_headers
+    @request_extra_args
+    @request_read_args
+    @request_view_args
+    def read_revision(self):
+        """Read a specific revision of a record.
+
+        :param: include_previous: If True, return the precedent revision of the record of interest.
+        """
+        item = self.service.read_revision(
+            identity=g.identity,
+            id_=resource_requestctx.view_args["pid_value"],
+            revision_id=resource_requestctx.view_args["revision_id"],
+            include_previous=resource_requestctx.args.get("include_previous", False),
         )
 
         return item.to_dict(), 200
@@ -193,6 +213,30 @@ class RDMRecordResource(RecordResource):
         )
 
         return item.to_dict(), 204
+
+    @request_headers
+    @request_view_args
+    @request_data
+    def request_deletion(self):
+        """Read the related review request."""
+        item = self.service.request_deletion(
+            g.identity,
+            resource_requestctx.view_args["pid_value"],
+            resource_requestctx.data,
+        )
+
+        resp_code = 201
+        if item.data["status"] == "accepted":
+            resp_code = 200
+            flash(
+                _(
+                    "Your record was deleted and from now on "
+                    "will resolve to this tombstone page."
+                ),
+                category="success",
+            )
+
+        return item.to_dict(), resp_code
 
     @request_headers
     @request_view_args
@@ -416,7 +460,6 @@ class RDMRecordCommunitiesResource(ErrorHandlersMixin, Resource):
 
     @request_view_args
     @request_data
-    @response_handler()
     def remove(self):
         """Remove communities from the record."""
         processed, errors = self.service.remove(

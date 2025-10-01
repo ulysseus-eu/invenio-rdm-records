@@ -16,6 +16,8 @@
     en: Publication
     sv: Publikation
     de: Publikation
+    es: Publicación
+    cs: Publikace
   tags:
     - depositable
     - linkable
@@ -37,6 +39,8 @@
     en: Annotation collection
     sv: Annoteringssamling
     de: Anmerkungssammlung
+    es: Colección de anotaciones
+    cs: Kolekce anotací
   tags:
     - depositable
     - linkable
@@ -58,6 +62,8 @@
     en: Book
     sv: Bok
     de: Buch
+    es: Libro
+    cs: Kniha
   tags:
     - depositable
     - linkable
@@ -79,6 +85,8 @@
     en: Book chapter
     sv: Bokkapitel
     de: Buchkapitel
+    es: Capítulo de libro
+    cs: Kapitola v knize
   tags:
     - depositable
     - linkable
@@ -100,6 +108,8 @@
     en: Conference paper
     sv: Konferensbidrag
     de: Konferenzbeitrag
+    es: Ponencia de conferencia
+    cs: Konferenční příspěvek
   tags:
     - depositable
     - linkable
@@ -121,6 +131,8 @@
     en: Conference proceeding
     sv: Konferenshandling
     de: Tagungsband
+    es: Actas de congreso
+    cs: Sborník konference
   tags:
     - depositable
     - linkable
@@ -142,6 +154,8 @@
     en: Output management plan
     sv: Outputhanteringsplan
     de: Outputmanagementplan
+    es: Plan de gestión de resultados
+    cs: Plán správy dat
   tags:
     - depositable
     - linkable
@@ -163,6 +177,8 @@
     en: Journal
     sv: Tidskrift
     de: Zeitschrift
+    es: Revista
+    cs: Časopis
   tags:
     - depositable
     - linkable
@@ -184,6 +200,8 @@
     en: Journal article
     sv: Tidskriftsartikel
     de: Zeitschriftenartikel
+    es: Artículo de revista
+    cs: Článek v časopise
   tags:
     - depositable
     - linkable
@@ -205,6 +223,8 @@
     en: Patent
     sv: Patent
     de: Patent
+    es: Patente
+    cs: Patent
   tags:
     - depositable
     - linkable
@@ -226,6 +246,8 @@
     en: Peer review
     sv: Peer review
     de: Peer Review
+    es: Revisión por pares
+    cs: Recenze
   tags:
     - depositable
     - linkable
@@ -247,6 +269,8 @@
     en: Preprint
     sv: Preprint
     de: Preprint
+    es: Preimpresión
+    cs: Preprint
   tags:
     - depositable
     - linkable
@@ -268,6 +292,8 @@
     en: Project deliverable
     sv: Projektresultat
     de: Projektergebnis
+    es: Entregable de proyecto
+    cs: Výstup projektu
   tags:
     - depositable
     - linkable
@@ -289,6 +315,8 @@
     en: Project milestone
     sv: Milstolpe för projektet
     de: Projektmeilenstein
+    es: Hito de proyecto
+    cs: Mezník projektu
   tags:
     - depositable
     - linkable
@@ -310,6 +338,8 @@
     en: Proposal
     sv: Förslag
     de: Antrag
+    es: Propuesta
+    cs: Návrh
   tags:
     - depositable
     - linkable
@@ -331,6 +361,8 @@
     en: Report
     sv: Rapport
     de: Bericht
+    es: Informe
+    cs: Zpráva
   tags:
     - depositable
     - linkable
@@ -352,6 +384,8 @@
     en: Software documentation
     sv: Mjukvarudokumentation
     de: Softwaredokumentation
+    es: Documentación de software
+    cs: Dokumentace softwaru
   tags:
     - depositable
     - linkable
@@ -373,6 +407,8 @@
     en: Taxonomic treatment
     sv: Taxonomisk behandling
     de: Taxonomische Behandlung
+    es: Tratamiento taxonómico
+    cs: Taxonomické zpracování
   tags:
     - depositable
     - linkable
@@ -394,6 +430,8 @@
     en: Technical note
     sv: Technical note
     de: Technical Note
+    es: Nota técnica
+    cs: Technická poznámka
   tags:
     - depositable
     - linkable
@@ -415,6 +453,8 @@
     en: Thesis
     sv: Avhandling
     de: Abschlussarbeit
+    es: Tesis
+    cs: Závěrečná práce
   tags:
     - depositable
     - linkable
@@ -436,6 +476,8 @@
     en: Working paper
     sv: Arbetsdokument
     de: Arbeitspapier
+    es: Documento de trabajo
+    cs: Pracovní dokument
   tags:
     - depositable
     - linkable
@@ -457,6 +499,8 @@
     en: Data paper
     sv: Datadokument
     de: Datenpapier
+    es: Artículo de datos
+    cs: Datový článek
   tags:
     - depositable
     - linkable
@@ -478,6 +522,8 @@
     en: Dissertation
     sv: Avhandling
     de: Dissertation
+    es: Disertación
+    cs: Disertační práce
   tags:
     - depositable
     - linkable
@@ -499,6 +545,8 @@
     en: Standard
     sv: Standard
     de: Standard
+    es: Estándard
+    cs: Standard
   tags:
     - depositable
     - linkable
@@ -520,6 +568,8 @@
     en: Other
     sv: Övrig
     de: Sonstige
+    es: Otro
+    cs: Jiné
   tags:
     - depositable
     - linkable
@@ -541,6 +591,8 @@
     en: Poster
     sv: Poster
     de: Poster
+    es: Póster
+    cs: Poster
   tags:
     - depositable
     - linkable
@@ -562,6 +614,8 @@
     en: Presentation
     sv: Presentation
     de: Präsentation
+    es: Presentación
+    cs: Prezentace
   tags:
     - depositable
     - linkable
@@ -583,6 +637,8 @@
     en: Event
     sv: Evenemang
     de: Veranstaltung
+    es: Evento
+    cs: Událost
   tags:
     - depositable
     - linkable
@@ -604,6 +660,8 @@
     en: Dataset
     sv: Dataset
     de: Datensatz
+    es: Conjunto de datos
+    cs: Datová sada
   tags:
     - depositable
     - linkable
@@ -625,6 +683,8 @@
     en: Image
     sv: Bild
     de: Bild
+    es: Imagen
+    cs: Obrázek
   tags:
     - depositable
     - linkable
@@ -646,6 +706,8 @@
     en: Figure
     sv: Figur
     de: Abbildung
+    es: Figura
+    cs: Schéma
   tags:
     - depositable
     - linkable
@@ -667,6 +729,8 @@
     en: Plot
     sv: Plot
     de: Plot
+    es: Gráfico de imagen
+    cs: Graf
   tags:
     - depositable
     - linkable
@@ -688,6 +752,8 @@
     en: Drawing
     sv: Ritning
     de: Zeichnung
+    es: Dibujo
+    cs: Kresba
   tags:
     - depositable
     - linkable
@@ -709,6 +775,8 @@
     en: Diagram
     sv: Diagram
     de: Diagramm
+    es: Diagrama
+    cs: Diagram
   tags:
     - depositable
     - linkable
@@ -730,6 +798,8 @@
     en: Photo
     sv: Foto
     de: Foto
+    es: Foto
+    cs: Fotografie
   tags:
     - depositable
     - linkable
@@ -751,6 +821,8 @@
     en: Other
     sv: Övrig
     de: Sonstiges
+    es: Otro
+    cs: Jiné
   tags:
     - depositable
     - linkable
@@ -772,6 +844,8 @@
     en: Model
     sv: Modell
     de: Modell
+    es: Modelo
+    cs: Model
   tags:
     - depositable
     - linkable
@@ -793,6 +867,8 @@
     en: Video
     de: Video
     sv: Video
+    es: Video
+    cs: Video
   tags:
     - depositable
     - linkable
@@ -814,6 +890,8 @@
     en: Audio
     de: Audio
     sv: Audio
+    es: Audio
+    cs: Audio
   tags:
     - depositable
     - linkable
@@ -835,6 +913,8 @@
     en: Software
     sv: Mjukvara
     de: Software
+    es: Software
+    cs: Software
   tags:
     - depositable
     - linkable
@@ -856,6 +936,8 @@
     en: Lesson
     sv: Lektion
     de: Unterrichtseinheit
+    es: Lección
+    cs: Lekce
   tags:
     - depositable
     - linkable
@@ -877,6 +959,8 @@
     en: Computational notebook
     sv: Computational notebook
     de: Computational Notebook
+    es: Cuaderno de cálculo
+    cs: Výpočetní notebook
   tags:
     - depositable
     - linkable
@@ -898,6 +982,8 @@
     en: Other
     sv: Övrig
     de: Sonstige
+    es: Otro
+    cs: Jiné
   tags:
     - depositable
     - linkable
@@ -919,6 +1005,8 @@
     en: Physical object
     sv: Fysiskt objekt
     de: Physikalisches Objekt
+    es: Objeto físico
+    cs: Fyzický objekt
   tags:
     - depositable
     - linkable
@@ -940,6 +1028,8 @@
     en: Workflow
     sv: Workflow
     de: Workflow
+    es: Flujo
+    cs: Workflow
   tags:
     - depositable
     - linkable

@@ -36,7 +36,7 @@ except AttributeError:
 
 from collections import namedtuple
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta
 from io import BytesIO
 from unittest import mock
 
@@ -47,7 +47,10 @@ from flask_principal import Identity, Need, RoleNeed, UserNeed
 from flask_security import login_user
 from flask_security.utils import hash_password
 from invenio_access.models import ActionRoles
-from invenio_access.permissions import superuser_access, system_identity
+from invenio_access.permissions import (
+    superuser_access,
+    system_identity,
+)
 from invenio_accounts.models import Role
 from invenio_accounts.testutils import login_user_via_session
 from invenio_administration.permissions import administration_access_action
@@ -96,7 +99,10 @@ from invenio_rdm_records.notifications.builders import (
     GrantUserAccessNotificationBuilder,
     GuestAccessRequestAcceptNotificationBuilder,
     GuestAccessRequestSubmitNotificationBuilder,
+    GuestAccessRequestSubmittedNotificationBuilder,
     GuestAccessRequestTokenCreateNotificationBuilder,
+    RecordDeletionAcceptNotificationBuilder,
+    RecordDeletionDeclineNotificationBuilder,
     UserAccessRequestAcceptNotificationBuilder,
     UserAccessRequestSubmitNotificationBuilder,
 )
@@ -109,6 +115,10 @@ from invenio_rdm_records.requests.entity_resolvers import (
 from invenio_rdm_records.resources.serializers import DataCite43JSONSerializer
 from invenio_rdm_records.services.communities.components import (
     CommunityServiceComponents,
+)
+from invenio_rdm_records.services.deletion_policy import (
+    GracePeriodPolicy,
+    RequestDeletionPolicy,
 )
 from invenio_rdm_records.services.pids import providers
 
@@ -192,7 +202,6 @@ def app_config(app_config, mock_datacite_client):
     # OAI Server
     app_config["OAISERVER_REPOSITORY_NAME"] = "InvenioRDM"
     app_config["OAISERVER_ID_PREFIX"] = "inveniordm"
-    app_config["OAISERVER_RECORD_INDEX"] = "rdmrecords-records"
     app_config["OAISERVER_SEARCH_CLS"] = "invenio_rdm_records.oai:OAIRecordSearch"
     app_config["OAISERVER_ID_FETCHER"] = "invenio_rdm_records.oai:oaiid_fetcher"
     app_config["OAISERVER_LAST_UPDATE_KEY"] = "updated"
@@ -262,6 +271,7 @@ def app_config(app_config, mock_datacite_client):
     app_config["DATACITE_PREFIX"] = "10.1234"
     app_config["DATACITE_DATACENTER_SYMBOL"] = "TEST"
     # ...but fake it
+    app_config["REQUESTS_REVIEWERS_ENABLED"] = True
 
     app_config["RDM_PERSISTENT_IDENTIFIER_PROVIDERS"] = [
         # DataCite DOI provider with fake client
@@ -313,6 +323,16 @@ def app_config(app_config, mock_datacite_client):
     app_config["RDM_FILES_DEFAULT_QUOTA_SIZE"] = 10**6
     app_config["RDM_FILES_DEFAULT_MAX_FILE_SIZE"] = 10**6
 
+    # allowed domains for remotely linked files
+    app_config["RECORDS_RESOURCES_FILES_ALLOWED_REMOTE_DOMAINS"] = [
+        "example.com",
+    ]
+
+    # allowed domains for fetched files
+    app_config["RECORDS_RESOURCES_FILES_ALLOWED_DOMAINS"] = [
+        "example.com",
+    ]
+
     # Communities
     app_config["COMMUNITIES_SERVICE_COMPONENTS"] = CommunityServiceComponents
 
@@ -340,9 +360,12 @@ def app_config(app_config, mock_datacite_client):
         GuestAccessRequestTokenCreateNotificationBuilder.type: GuestAccessRequestTokenCreateNotificationBuilder,
         GuestAccessRequestAcceptNotificationBuilder.type: GuestAccessRequestAcceptNotificationBuilder,
         GuestAccessRequestSubmitNotificationBuilder.type: GuestAccessRequestSubmitNotificationBuilder,
+        GuestAccessRequestSubmittedNotificationBuilder.type: GuestAccessRequestSubmittedNotificationBuilder,
         UserAccessRequestAcceptNotificationBuilder.type: UserAccessRequestAcceptNotificationBuilder,
         UserAccessRequestSubmitNotificationBuilder.type: UserAccessRequestSubmitNotificationBuilder,
         GrantUserAccessNotificationBuilder.type: GrantUserAccessNotificationBuilder,
+        RecordDeletionAcceptNotificationBuilder.type: DummyNotificationBuilder,
+        RecordDeletionDeclineNotificationBuilder.type: DummyNotificationBuilder,
     }
 
     # Specifying default resolvers. Will only be used in specific test cases.
@@ -354,6 +377,10 @@ def app_config(app_config, mock_datacite_client):
         ServiceResultResolver(service_id="requests", type_key="request"),
         ServiceResultResolver(service_id="request_events", type_key="request_event"),
     ]
+
+    # Specifying a notifications settings view function to trigger registration of route
+    # needed for invenio_url_for
+    app_config["NOTIFICATIONS_SETTINGS_VIEW_FUNCTION"] = lambda: "<index>"
 
     # Extending preferences schemas, to include notification preferences. Should not matter for most test cases
     app_config["ACCOUNTS_USER_PREFERENCES_SCHEMA"] = (
@@ -377,12 +404,32 @@ def app_config(app_config, mock_datacite_client):
     }
 
     app_config["USERS_RESOURCES_GROUPS_ENABLED"] = True
+    app_config["THEME_FRONTPAGE"] = False
+
+    app_config["RDM_IMMEDIATE_RECORD_DELETION_ENABLED"] = True
+    app_config["RDM_IMMEDIATE_RECORD_DELETION_POLICIES"] = [
+        GracePeriodPolicy(grace_period=timedelta(days=30))
+    ]
+    app_config["RDM_REQUEST_RECORD_DELETION_ENABLED"] = True
+    app_config["RDM_REQUEST_RECORD_DELETION_POLICIES"] = [RequestDeletionPolicy()]
 
     return app_config
 
 
 @pytest.fixture(scope="module")
-def create_app(instance_path):
+def extra_entry_points():
+    """Extra entrypoints."""
+    return {
+        "invenio_base.blueprints": [
+            "invenio_app_rdm_records = tests.mock_module:create_invenio_app_rdm_records_blueprint",  # noqa
+            "invenio_app_rdm_requests = tests.mock_module:create_invenio_app_rdm_requests_blueprint",  # noqa
+            "invenio_app_rdm_communities = tests.mock_module:create_invenio_app_rdm_communities_blueprint",  # noqa
+        ],
+    }
+
+
+@pytest.fixture(scope="module")
+def create_app(instance_path, entry_points):
     """Application factory fixture."""
     return _create_app
 
@@ -1597,6 +1644,41 @@ def awards_v(app, funders_v):
     return award
 
 
+@pytest.fixture(scope="module")
+def removal_reason_type(app):
+    """Removal reason vocabulary type."""
+    return vocabulary_service.create_type(system_identity, "removalreasons", "rem")
+
+
+@pytest.fixture(scope="module")
+def removal_reason_v(app, removal_reason_type):
+    """Removal reason vocabulary record."""
+    vocab_spam = vocabulary_service.create(
+        system_identity,
+        {
+            "id": "spam",
+            "title": {"en": "Spam"},
+            "type": "removalreasons",
+        },
+    )
+    vocab_test_record = vocabulary_service.create(
+        system_identity,
+        {
+            "id": "test-record",
+            "title": {"en": "Test upload of a record"},
+            "type": "removalreasons",
+            "tags": ["deletion-request"],
+        },
+    )
+
+    Vocabulary.index.refresh()
+
+    return {
+        "spam": vocab_spam,
+        "test-record": vocab_test_record,
+    }
+
+
 @pytest.fixture()
 def cache():
     """Empty cache."""
@@ -1626,6 +1708,7 @@ RunningApp = namedtuple(
         "licenses_v",
         "funders_v",
         "awards_v",
+        "removal_reason_v",
         "moderator_role",  # Add moderator role by default to the app
     ],
 )
@@ -1649,6 +1732,7 @@ def running_app(
     licenses_v,
     funders_v,
     awards_v,
+    removal_reason_v,
     moderator_role,
 ):
     """This fixture provides an app with the typically needed db data loaded.
@@ -1673,6 +1757,7 @@ def running_app(
         licenses_v,
         funders_v,
         awards_v,
+        removal_reason_v,
         moderator_role,
     )
 
@@ -2081,7 +2166,10 @@ def record_factory(db, uploader, minimal_record, community, location):
             """Creates new record that belongs to the same community."""
             service = current_rdm_records_service
             files_service = service.draft_files
-            idty = uploader.identity
+            if isinstance(uploader, Identity):
+                idty = uploader
+            else:
+                idty = uploader.identity
             # create draft
             if file:
                 record_dict["files"] = {"enabled": True}

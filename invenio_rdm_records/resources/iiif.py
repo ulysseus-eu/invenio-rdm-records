@@ -11,12 +11,14 @@
 import textwrap
 from abc import ABC, abstractmethod
 from functools import wraps
+from importlib.metadata import version
 from urllib.parse import urljoin
 
 import marshmallow as ma
 import requests
 from flask import Response, current_app, g, request, send_file
 from flask_cors import cross_origin
+from flask_iiif.errors import MultimediaImageNotFound
 from flask_resources import (
     HTTPJSONException,
     JSONSerializer,
@@ -31,7 +33,6 @@ from flask_resources import (
     route,
     with_content_negotiation,
 )
-from importlib_metadata import version
 from invenio_drafts_resources.resources.records.errors import RedirectException
 from invenio_i18n import lazy_gettext as _
 from invenio_records_resources.resources.errors import ErrorHandlersMixin
@@ -105,6 +106,11 @@ class IIIFResourceConfig(ResourceConfig, ConfiguratorMixin):
                 description=_(
                     "The record associated with this file has been deleted. See deletion notice."
                 ),
+            )
+        ),
+        MultimediaImageNotFound: create_error_handler(
+            lambda e: HTTPJSONException(
+                code=404, description=_("The requested image cannot be found.")
             )
         ),
     }
@@ -321,7 +327,7 @@ class IIIFProxy(ABC):
         """
         return request.endpoint in (
             "iiif.image_api",
-            "iiif.image_info",
+            "iiif.info",
             # TODO: `image_base` would redirect to the info endpoint, but we should make
             #       sure the proxy does this correctly, preserving the original path.
             # "iiif.image_base",

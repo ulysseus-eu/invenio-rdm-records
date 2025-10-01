@@ -809,6 +809,9 @@
               }
             }
           },
+          "copyright": {
+            "type": "text"
+          },
           "creators": {
             "properties": {
               "affiliations": {
@@ -1609,6 +1612,13 @@
           },
           "is_visible": {
             "type": "boolean"
+          },
+          "deletion_policy": {
+            "properties": {
+              "id": {
+                "type": "keyword"
+              }
+            }
           }
         }
       },
