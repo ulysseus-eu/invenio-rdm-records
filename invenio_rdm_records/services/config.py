@@ -796,10 +796,10 @@ class RDMRecordServiceConfig(RecordServiceConfig, ConfiguratorMixin):
         "request_deletion": RecordEndpointLink(
             "records.request_deletion", when=is_published
         ),
-        "persons": RecordEndpointLink("record_persons.search"),
-        "persons-suggestions": RecordEndpointLink("record_persons.get_suggestions"),
-        "organizations": RecordEndpointLink("record_organizations.search"),
-        "organizations-suggestions": RecordEndpointLink("record_organizations.get_suggestions"),
+        "persons": RecordEndpointLink("record_communities.search_persons"),
+        "persons-suggestions": RecordEndpointLink("record_communities.get_persons_suggestions"),
+        "organizations": RecordEndpointLink("record_communities.search_organizations"),
+        "organizations-suggestions": RecordEndpointLink("record_communities.get_organizations_suggestions"),
         # Requests
         # Unfortunately `record_pid`` was used in `RDMRecordRequestsResourceConfig``
         # instead of `pid_value`, so we have to pass a bespoke vars func
