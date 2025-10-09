@@ -688,10 +688,10 @@ RDM_MEDIA_FILES_DEFAULT_MAX_FILE_SIZE = 10 * (10**9)  # 10 GB
 # For backwards compatibility,
 # FILES_REST_DEFAULT_QUOTA_SIZE & FILES_REST_DEFAULT_MAX_FILE_SIZE
 # are used respectively instead
-RDM_FILES_DEFAULT_QUOTA_SIZE = None
+RDM_FILES_DEFAULT_QUOTA_SIZE = 3 * 10**9
 """Default size for a bucket in bytes for files."""
 
-RDM_FILES_DEFAULT_MAX_FILE_SIZE = None
+RDM_FILES_DEFAULT_MAX_FILE_SIZE = 300 * 10**6
 """Default maximum file size for a bucket in bytes for files."""
 
 
