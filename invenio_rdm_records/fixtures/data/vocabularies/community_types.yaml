@@ -33,3 +33,10 @@
     de: "Person"
     es: "Persona"
     cs: "Osoba"
+- id: "r&i-group"
+  title:
+    en: "R&I group"
+    sv: "R&I grupp"
+    de: "R&I Gruppe"
+    es: "R&I grupo"
+    cs: "R&I skupina"
